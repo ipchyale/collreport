@@ -11,6 +11,7 @@ Let's start with the easiest: thickness and gloss data. They are easiest because
 
 ``
 tf = pd.read_excel("gloss_thickness.xlsx", sheet_name = "thickness")
+
 gf = pd.read_excel("gloss_thickness.xlsx", sheet_name = "gloss")
 ``
 
