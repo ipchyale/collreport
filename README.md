@@ -7,10 +7,30 @@ You will receive data from collaborators in several files, together with folders
 
 ### Thickness and Gloss
 
-Let's start with the easiest: thickness and gloss data. They are easiest because the data is already structured, and in fact tabular. Typically, a collaborator will provide a single Excel workbook that contains both gloss and thickness measurements, possibly in different worksheets. Let's say you receive a file called ``gloss_thickness.xlsx`` that has two tabs, ``gloss`` and ``thickness``. Processing this data is as simple as:
+Let's start with the easiest: thickness and gloss data. They are easiest because the data is already structured, and in fact tabular. Typically, a collaborator will provide a single Excel workbook that contains both gloss and thickness measurements, possibly in different worksheets. Let's say you receive a file called ``gloss_thickness.xlsx`` that has two sheets, ``gloss`` and ``thickness``. Processing this data is as simple as:
 
 ```
 tf = pd.read_excel("gloss_thickness.xlsx", sheet_name = "thickness")
 gf = pd.read_excel("gloss_thickness.xlsx", sheet_name = "gloss")
 ```
 
+### Color
+
+Color is a bit trickier, because our color software, Spectrashop, exports to a non-tabular data format. I've written a parser for these files, but occasionally you'll encounter a file with a structure that the parser doesn't expect (this happens as a result of the way Spectrashop is used). As time goes on, we will improve the parser to handle all possible file structures.
+
+In the ideal case (and assuming you've cloned the ss2csv folder into your home directory), parsing a color file is as follows:
+
+```
+import sys, os
+sys.path.append(os.path.expanduser("~"))
+from ss2csv.ss2csv import file2table,cleancols
+
+df = cleancols(file2table(example.txt))
+```
+
+You will, additionally, have to parse the `SAMPLE_ID1` column in order to extract what we might call the "metadata" of color measurements:
+
+1. sample index (often, this is an institutional accession number)
+2. illumination mode (this can be any one of M0, M1, M2, or M3)
+3. measurement location (dmax, dmin, or dmid, usually)
+4. measurement trial (we generally ask folks to do three trials per sample)
