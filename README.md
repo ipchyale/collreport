@@ -124,6 +124,6 @@ attach(df,"ipath")
 histogram(xcol="roughness",bins=450,thumb=64,bg="grey")
 ```
 
-![unit histogram](hist.jpg)
+![unit histogram](./hist.jpg)
 
 
