@@ -9,7 +9,7 @@ You will receive data from collaborators in several files, together with folders
 
 Let's start with the easiest: thickness and gloss data. They are easiest because the data is already structured, and in fact tabular. Typically, a collaborator will provide a single Excel workbook that contains both gloss and thickness measurements, possibly in different worksheets. Let's say you receive a file called ``gloss_thickness.xlsx`` that has two sheets, ``gloss`` and ``thickness``. Processing this data is as simple as:
 
-```
+```python
 tf = pd.read_excel("gloss_thickness.xlsx", sheet_name = "thickness")
 gf = pd.read_excel("gloss_thickness.xlsx", sheet_name = "gloss")
 ```
@@ -20,7 +20,7 @@ Color is a bit trickier, because our color software, Spectrashop, exports to a n
 
 In the ideal case (and assuming you've cloned the ss2csv folder into your home directory), parsing a color file is as follows:
 
-```
+```python
 import sys, os
 sys.path.append(os.path.expanduser("~"))
 from ss2csv.ss2csv import file2table,cleancols
@@ -37,9 +37,13 @@ You will, additionally, have to parse the `SAMPLE_ID1` column in order to extrac
 
 ### Texture
 
-Texture is the trickiest of the three, because it involves unstructured data (images), and because there are a few different ways we model texture. The most important texture model we use, the one that appears in the "glyph", is _roughness_. Roughness is actually pretty straightforward to obtain because both Jack and I have built some software around it:
+Texture is the trickiest of the three, because it involves unstructured data (images), and because there are a few different ways we model texture. 
 
-```
+#### Roughness
+
+The most important texture model we use, the one that appears in the "glyph", is _roughness_. Roughness is actually pretty straightforward to obtain because both Jack and I have built some software around it:
+
+```python
 import sys, glob, os
 sys.path.append(os.path.expanduser("~") + "/" + "ivpy/src")
 from ivpy import *
@@ -54,3 +58,16 @@ attach(df, "tiffpath")
 
 df["roughness"] = extract("roughness")
 ```
+
+#### Bandpass filtering
+
+During the process of modeling roughness, we create a cropped, normalized, bandpass version of the original scope capture. The `extract()` function in `iv.py` does not save this processed image, but we can do so using the `utils` library in `ivpy`:
+
+```python
+from ivpy.utils import tifpass
+
+attach(df,'tiffpath')
+df['tiffpath_tifpass'] = tifpass(savedir='/path/to/folder/you/want/images/saved/to')
+```
+
+This will save the images as TIFFs. If you want to display them correctly in `iv.py`, you'll need to convert them to a file format like JPG. I use native Mac tools for that, but there are plenty of other options.
