@@ -30,7 +30,7 @@ df = cleancols(file2table(example.txt))
 
 You will, additionally, have to parse the `SAMPLE_ID1` column in order to extract what we might call the "metadata" of color measurements:
 
-1. sample index (often, this is an institutional accession number)
-2. illumination mode (this can be any one of M0, M1, M2, or M3)
-3. measurement location (dmax, dmin, or dmid, usually)
-4. measurement trial (we generally ask folks to do three trials per sample)
+1. `idx` sample index, which is typically an institutional accession number
+2. `mmode` illumination mode, either M0, M1, M2, or M3
+3. `mloc` measurement location, either dmax, dmin, or dmid
+4. `mtrial` measurement trial, usually 0, 1, or 2
