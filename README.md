@@ -34,3 +34,23 @@ You will, additionally, have to parse the `SAMPLE_ID1` column in order to extrac
 2. `mmode` illumination mode, either M0, M1, M2, or M3
 3. `mloc` measurement location, either dmax, dmin, or dmid
 4. `mtrial` measurement trial, usually 0, 1, or 2
+
+### Texture
+
+Texture is the trickiest of the three, because it involves unstructured data (images), and because there are a few different ways we model texture. The most important texture model we use, the one that appears in the "glyph", is _roughness_. Roughness is actually pretty straightforward to obtain because both Jack and I have built some software around it:
+
+```
+import sys, glob, os
+sys.path.append(os.path.expanduser("~") + "/" + "ivpy/src")
+from ivpy import *
+from ivpy.extract import extract
+
+DIR = "/path/to/texture/files"
+
+tiffpaths = glob.glob(os.path.join(DIR,"*.tif"))
+df = pd.DataFrame({"tiffpath":tiffpaths})
+
+attach(df,"tiffpath")
+
+df["roughness"] = extract("rougness")
+```
