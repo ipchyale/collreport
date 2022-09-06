@@ -61,7 +61,7 @@ df["roughness"] = extract("roughness")
 
 #### Bandpass filtering
 
-During the process of modeling roughness, we create a cropped, normalized, bandpass version of the original scope capture. The `extract()` function in `iv.py` does not save this processed image, but we can do so using the `utils` library in `ivpy`:
+During the process of modeling roughness, we create a cropped, normalized, bandpass version of the original scope capture. The `extract()` function in `iv.py` does not save this processed image, but we can do so using the `utils` library in `iv.py`:
 
 ```python
 from ivpy.utils import tifpass
