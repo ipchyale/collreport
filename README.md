@@ -52,5 +52,5 @@ df = pd.DataFrame({"tiffpath":tiffpaths})
 
 attach(df, "tiffpath")
 
-df["roughness"] = extract("rougness")
+df["roughness"] = extract("roughness")
 ```
