@@ -47,10 +47,10 @@ from ivpy.extract import extract
 
 DIR = "/path/to/texture/files"
 
-tiffpaths = glob.glob(os.path.join(DIR,"*.tif"))
+tiffpaths = glob.glob(os.path.join(DIR, "*.tif"))
 df = pd.DataFrame({"tiffpath":tiffpaths})
 
-attach(df,"tiffpath")
+attach(df, "tiffpath")
 
 df["roughness"] = extract("rougness")
 ```
