@@ -26,6 +26,8 @@ tf = pd.read_excel("gloss_thickness.xlsx", sheet_name = "thickness")
 gf = pd.read_excel("gloss_thickness.xlsx", sheet_name = "gloss")
 ```
 
+Note that you will need to pip install Python package `openpyxl`.
+
 ## Color
 
 Color is a bit trickier, because our color software, Spectrashop, exports to a non-tabular data format. I've written a parser for these files, but occasionally you'll encounter a file with a structure that the parser doesn't expect (this happens as a result of the way Spectrashop is used). As time goes on, we will improve the parser to handle all possible file structures.
