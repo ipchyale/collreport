@@ -126,7 +126,7 @@ lf["ipath"] = "l.jpg"
 4. Concatenate the two dataframes:
 
 ```python
-df = pd.concatenate([cf,lf])
+df = pd.concat([cf,lf])
 ```
 
 5. Use `iv.py` to make histograms using these icons:
