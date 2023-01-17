@@ -55,16 +55,6 @@ def slider(title,val,vmin,vmax,font=font,theme='light'):
     
     return canvas
 
-def slider_panel(*args):
-    
-    n = len(args)
-    metacanvas = Image.new('RGB',(1000,n*200))
-    
-    for i,arg in enumerate(args):
-        metacanvas.paste(arg,(0,i*200))
-    
-    return metacanvas
-
 def gmat(im,font=font,theme='light',top='WARM',right='MATTE',bottom='ROUGH',left='THICK'):
 
     if theme=='light':
@@ -127,6 +117,13 @@ def info_panel(idx,title,font=font,font_large=font_large,theme='light'):
     
     return canvas
 
+def draw_outline(im,width,linecolor):
+        
+        draw = ImageDraw.Draw(im)
+        draw.rectangle([(0,0),(im.width-1,im.height-1)],outline=linecolor,width=width)
+        
+        return im
+
 def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,mapcol,dminhexcol,dmaxhexcol,idx_title,idx_subtitle,theme='light'):
     
     if theme=='light':
@@ -151,76 +148,81 @@ def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,
     
     t,g,c,r,tn,ctrst = df[tcol].loc[i],round(df[gcol].loc[i]),round(df[wcol].loc[i]),round(df[rcol].loc[i],1),round(df[tonecol].loc[i]),round(df[contrastcol].loc[i]*100)
     
-    sliders = slider_panel(slider('THICKNESS (mm)',t,tmin,tmax,font,theme=theme),
+    sliders = vconcat(slider('THICKNESS (mm)',t,tmin,tmax,font,theme=theme),
                            slider('GLOSS (GU)',g,gmin,gmax,font,theme=theme),
                            slider('BASE WARMTH (b*)',c,cmin,cmax,font,theme=theme),
                            slider('ROUGHNESS (σ)',r,rmin,rmax,font,theme=theme),
                            slider('TONE WARMTH (b*)',tn,tonemin,tonemax,font,theme=theme),
-                           slider('CONTRAST (%)',ctrst,contrastmin,contrastmax,font,theme=theme))
+                           slider('CONTRAST (%)',ctrst,contrastmin,contrastmax,font,theme=theme),
+                           spacer=0)
     
     matted_glyph = gmat(glyph,theme=theme)
     matted_glyph.thumbnail((sliders.width,sliders.width),Image.Resampling.LANCZOS)
     
-    glyph_and_sliders = Image.new('RGB',(matted_glyph.width,matted_glyph.height+sliders.height),bg)
-    
-    glyph_and_sliders.paste(matted_glyph,(0,0))
-    glyph_and_sliders.paste(sliders,(0,matted_glyph.height))
+    glyph_and_sliders = vconcat(matted_glyph,sliders,spacer=0)
     
     print_image = Image.open(df[pcol].loc[i])
+    print_image = draw_outline(print_image,1,'black')
+
     texture_image = Image.open(df[xcol].loc[i])
     
     print_image.thumbnail((1024,1024),Image.Resampling.LANCZOS)
     texture_image.thumbnail((1024,1024),Image.Resampling.LANCZOS)
 
     contrast_map = Image.open(df[mapcol].loc[i])
+    contrast_map = draw_outline(contrast_map,1,'black')
+    
     dminhex = df[dminhexcol].loc[i]
     dmaxhex = df[dmaxhexcol].loc[i]
-    cicon = coloricon(dminhex,dmaxhex,s=256)
+    cicon = coloricon(dminhex,dmaxhex,s=480)
+    cicon = draw_outline(cicon,1,'black')
 
-    color_vis = Image.new('RGB', (cicon.width+contrast_map.width+64, cicon.height), bg)
-    color_vis.paste(cicon,(0,0))
-    color_vis.paste(contrast_map,(cicon.width+64,0))
+    color_vis = hconcat(cicon,contrast_map,spacer=32)
     
-    images = Image.new('RGB',(1024,print_image.height+texture_image.height+64+color_vis.height+64),bg)
-    
-    images.paste(print_image,(0,0))
-    images.paste(texture_image,(0,print_image.height+64))
-    images.paste(color_vis,(0,print_image.height+texture_image.height+64+64))
+    images = vconcat(print_image,texture_image,color_vis,spacer=64)
     
     infopanel = info_panel(idx_title,idx_subtitle)
     infopanel.thumbnail((48/infopanel.height*infopanel.width,48),Image.Resampling.LANCZOS)
     
-    images_and_infopanel = Image.new('RGB',(1024,images.height+infopanel.height+64),bg)
-    images_and_infopanel.paste(infopanel,(0,0))
-    images_and_infopanel.paste(images,(0,infopanel.height+64))
+    infopanel_and_images = vconcat(infopanel,images,spacer=64)
     
-    report = Image.new('RGB',
-                       (images_and_infopanel.width+glyph_and_sliders.width+128,
-                       (max(images_and_infopanel.height,glyph_and_sliders.height))),
-                       bg)
-    
-    report.paste(images_and_infopanel,(0,0))
-    report.paste(glyph_and_sliders,(images_and_infopanel.width+128,0))
+    report = hconcat(infopanel_and_images,glyph_and_sliders,spacer=128)
     
     matted_report = mat(report)
     
     return matted_report
 
-def heading_text_image(hdg,txt,im,theme='light'):
+def vconcat(*args,spacer=64,theme='light'):
     
     if theme=='light':
         bg = "white"
     elif theme=='dark':
         bg = "#212121"
-        
-    canvas = Image.new('RGB',(max(hdg.width,txt.width,im.width),
-                              hdg.height+txt.height+hdg.height+im.height+hdg.height),bg)
-    
-    canvas.paste(hdg,(0,0))
-    canvas.paste(txt,(0,hdg.height+hdg.height))
-    canvas.paste(im,(0,hdg.height+hdg.height+txt.height+hdg.height))
+
+    canvas_width = max([i.width for i in args])
+    canvas_height = sum([i.height for i in args]) + spacer*(len(args)-1)
+    canvas = Image.new('RGB',(canvas_width,canvas_height),bg)
+
+    for i,arg in enumerate(args):
+        canvas.paste(arg,(0,spacer*i+sum([j.height for j in args[:i]])))
     
     return canvas
+
+def hconcat(*args,spacer=64,theme='light'):
+        
+        if theme=='light':
+            bg = "white"
+        elif theme=='dark':
+            bg = "#212121"
+    
+        canvas_width = sum([i.width for i in args]) + spacer*(len(args)-1)
+        canvas_height = max([i.height for i in args])
+        canvas = Image.new('RGB',(canvas_width,canvas_height),bg)
+    
+        for i,arg in enumerate(args):
+            canvas.paste(arg,(spacer*i+sum([j.width for j in args[:i]]),0))
+        
+        return canvas
 
 def block_text(s,font=font_serif,width=70,theme='light'):
 
@@ -264,7 +266,6 @@ def glyph_legend(side=200,theme='light'):
     
     im = Image.new('RGB', (side,side), bg)
     draw = ImageDraw.Draw(im)
-    adj = int( side / 20 )
     halfside = int( side / 2 )
 
     draw.line([(halfside,0),(halfside,side)],
@@ -297,14 +298,58 @@ def glyph_legend(side=200,theme='light'):
 
     return gmat(mat(im))
 
-def coloricon(base,tone,s):
+def coloricon(base,tone,s,labels=True,fonts=fonts):
+
+    font_size = int(s/16)
+    font = ImageFont.truetype(fonts['thin'],font_size)
+
     im = Image.new('RGB',(s,s),base)
     draw = ImageDraw.Draw(im)
     draw.rounded_rectangle(
         [(s/2 - s/4, s/2 - s/4), (s/2 + s/4, s/2 + s/4)],radius=int(s*0.15625),fill=tone
     )
+
+    if labels:
+        top = "SPECTROPHOTOMETER"
+        top_width = font.getsize(top)[0]
+        draw.text((s/2 - top_width/2, font_size), top, font=font, fill="black")
+
+        DMIN = "DMIN"
+        DMIN_width,DMIN_height = font.getsize(DMIN)
+        draw.text((s/2 - DMIN_width/2, s - DMIN_height - font_size), DMIN, font=font, fill="black")
+
+        DMAX = "DMAX"
+        DMAX_width,DMAX_height = font.getsize(DMAX)
+        draw.text((s/2 - DMAX_width/2, s/2 - DMAX_height/2), DMAX, font=font, fill="white")
     
     return im
+
+def table_of_contents(d,width,fonts=fonts,theme='light'):
+
+    font_size = int(width/64)
+    font = ImageFont.truetype(fonts['thin'],font_size)
+    
+    if theme=='light':
+        bg = "white"
+        fill = "#212121"
+    elif theme=='dark':
+        bg = "#212121"
+        fill = "grey"
+        
+    toclines = []    
+    for k in d.keys():
+        ndots = 1
+        while font.getsize(k.upper() + '.' * ndots + str(d[k]))[0] < width:
+            ndots+=1
+        ndots-=1
+        s = k.upper() + '.' * ndots + str(d[k])
+        height = font.getsize(s)[1]
+        tocline = Image.new('RGB',(width,height),bg)
+        draw = ImageDraw.Draw(tocline)
+        draw.text((0,0),text=s,font=font,fill=fill)
+        toclines.append(tocline)
+        
+    return vconcat(*toclines,spacer=int(width/64))
 
 
 
