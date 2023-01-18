@@ -25,7 +25,13 @@ font = ImageFont.truetype(fonts['regular'],45)
 font_large = ImageFont.truetype(fonts['regular'],90)
 font_serif = ImageFont.truetype(fonts['serif'],36)
 
-def slider(title,val,vmin,vmax,font=font,theme='light'):
+def slider_pos(val,vmin,vrange,slider_width):
+    pct = (val - vmin) / vrange
+    pos = int(pct * (slider_width - slider_width * 0.2) + slider_width * 0.1)
+
+    return pos
+
+def slider(title,val,vmin,vmax,allvals,font=font,theme='light',rounding_digits=0):
     
     if theme=='light':
         bg = "white"
@@ -35,23 +41,37 @@ def slider(title,val,vmin,vmax,font=font,theme='light'):
     fill = "grey"
     
     canvas = Image.new('RGB',(1000,200),bg)
+    slider_width,slider_height = canvas.size
     draw = ImageDraw.Draw(canvas)
     
-    draw.line([(100,100),(900,100)],width=8,fill=fill)
-    
+    draw.line([(int(slider_width*0.1),int(slider_height*0.5)),(int(slider_width*0.9),int(slider_height*0.5))],width=int(slider_width/125),fill=fill)
+
     vrange = vmax - vmin
-    pct = (val - vmin) / vrange
-    pos = int(pct * 800) + 100
+    markpos = slider_pos(val,vmin,vrange,slider_width)
+
+    # distribution ticks
+    tick_height = slider_height / 8
+    for val in allvals:
+        pos = slider_pos(val,vmin,vrange,slider_width)
+        draw.line([(pos,int(slider_height*0.5-tick_height/2)),(pos,int(slider_height*0.5+tick_height/2))],width=int(slider_width/1000),fill=fill)
     
-    draw.rounded_rectangle([(pos-15,70),(pos+15,130)],radius=5,fill=bg,outline=fill,width=4)
+    draw.rounded_rectangle([(markpos-15,70),(markpos+15,130)],radius=5,fill=bg,outline=fill,width=4)
     
-    draw.text((100,150),text=str(vmin),font=font,fill=fill)
+    if rounding_digits is not None:
+        if rounding_digits==0:
+            vmin = round(vmin) # returns int
+            vmax = round(vmax) # returns int
+        else:
+            vmin = round(vmin,rounding_digits)
+            vmax = round(vmax,rounding_digits)
+        
+    draw.text((int(slider_width*0.1),int(slider_height*0.75)),text=str(vmin),font=font,fill=fill)
     
     vmaxWidth,_ = font.getsize(str(vmax))
-    draw.text((900-vmaxWidth,150),text=str(vmax),font=font,fill=fill)
+    draw.text((int(slider_width*0.9)-vmaxWidth,int(slider_height*0.75)),text=str(vmax),font=font,fill=fill)
     
     titleWidth,_ = font.getsize(title)
-    draw.text((int(500-titleWidth/2),150),text=title,font=font,fill=fill)
+    draw.text((int(slider_width/2-titleWidth/2),int(slider_height*0.75)),text=title,font=font,fill=fill)
     
     return canvas
 
@@ -135,31 +155,38 @@ def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,
     
     tmin = df[tcol].min()
     tmax = df[tcol].max()
-    gmin = round(df[gcol].min())
-    gmax = round(df[gcol].max())
-    cmin = round(df[wcol].min())
-    cmax = round(df[wcol].max())
-    rmin = round(df[rcol].min(),1)
-    rmax = round(df[rcol].max(),1)
-    tonemin = round(df[tonecol].min())
-    tonemax = round(df[tonecol].max())
-    contrastmin = round(df[contrastcol].min()*100)
-    contrastmax = round(df[contrastcol].max()*100)
+    gmin = df[gcol].min()
+    gmax = df[gcol].max()
+    cmin = df[wcol].min()
+    cmax = df[wcol].max()
+    rmin = df[rcol].min()
+    rmax = df[rcol].max()
+    tonemin = df[tonecol].min()
+    tonemax = df[tonecol].max()
+    contrastmin = df[contrastcol].min()*100
+    contrastmax = df[contrastcol].max()*100
     
-    t,g,c,r,tn,ctrst = df[tcol].loc[i],round(df[gcol].loc[i]),round(df[wcol].loc[i]),round(df[rcol].loc[i],1),round(df[tonecol].loc[i]),round(df[contrastcol].loc[i]*100)
-    
-    sliders = vconcat(slider('THICKNESS (mm)',t,tmin,tmax,font,theme=theme),
-                           slider('GLOSS (GU)',g,gmin,gmax,font,theme=theme),
-                           slider('BASE WARMTH (b*)',c,cmin,cmax,font,theme=theme),
-                           slider('ROUGHNESS (σ)',r,rmin,rmax,font,theme=theme),
-                           slider('TONE WARMTH (b*)',tn,tonemin,tonemax,font,theme=theme),
-                           slider('CONTRAST (%)',ctrst,contrastmin,contrastmax,font,theme=theme),
-                           spacer=0)
+    t,g,c,r,tn,ctrst = df[tcol].loc[i],df[gcol].loc[i],df[wcol].loc[i],df[rcol].loc[i],df[tonecol].loc[i],df[contrastcol].loc[i]*100
+
+    nonnull_thickness_vals = df[tcol][df[tcol].notnull()]
+    nonnull_gloss_vals = df[gcol][df[gcol].notnull()]
+    nonnull_color_vals = df[wcol][df[wcol].notnull()]
+    nonnull_roughness_vals = df[rcol][df[rcol].notnull()]
+    nonnull_tone_vals = df[tonecol][df[tonecol].notnull()]
+    nonnull_contrast_vals = df[contrastcol][df[contrastcol].notnull()] * 100
+
+    sliders = vconcat(slider('THICKNESS (mm)',t,tmin,tmax,nonnull_thickness_vals,font,theme=theme,rounding_digits=None),
+                           slider('GLOSS (GU)',g,gmin,gmax,nonnull_gloss_vals,font,theme=theme),
+                           slider('BASE WARMTH (b*)',c,cmin,cmax,nonnull_color_vals,font,theme=theme),
+                           slider('ROUGHNESS (σ)',r,rmin,rmax,nonnull_roughness_vals,font,theme=theme,rounding_digits=1),
+                           slider('TONE WARMTH (b*)',tn,tonemin,tonemax,nonnull_tone_vals,font,theme=theme),
+                           slider('CONTRAST (%)',ctrst,contrastmin,contrastmax,nonnull_contrast_vals,font,theme=theme),
+                           spacer=0,theme=theme)
     
     matted_glyph = gmat(glyph,theme=theme)
     matted_glyph.thumbnail((sliders.width,sliders.width),Image.Resampling.LANCZOS)
     
-    glyph_and_sliders = vconcat(matted_glyph,sliders,spacer=0)
+    glyph_and_sliders = vconcat(matted_glyph,sliders,spacer=0,theme=theme)
     
     print_image = Image.open(df[pcol].loc[i])
     print_image = draw_outline(print_image,1,'black')
@@ -177,16 +204,16 @@ def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,
     cicon = coloricon(dminhex,dmaxhex,s=480)
     cicon = draw_outline(cicon,1,'black')
 
-    color_vis = hconcat(cicon,contrast_map,spacer=32)
+    color_vis = hconcat(cicon,contrast_map,spacer=32,theme=theme)
     
-    images = vconcat(print_image,texture_image,color_vis,spacer=64)
+    images = vconcat(print_image,texture_image,color_vis,spacer=64,theme=theme)
     
     infopanel = info_panel(idx_title,idx_subtitle)
     infopanel.thumbnail((48/infopanel.height*infopanel.width,48),Image.Resampling.LANCZOS)
     
-    infopanel_and_images = vconcat(infopanel,images,spacer=64)
+    infopanel_and_images = vconcat(infopanel,images,spacer=64,theme=theme)
     
-    report = hconcat(infopanel_and_images,glyph_and_sliders,spacer=128)
+    report = hconcat(infopanel_and_images,glyph_and_sliders,spacer=128,theme=theme)
     
     matted_report = mat(report)
     
@@ -301,7 +328,8 @@ def glyph_legend(side=200,theme='light'):
 def coloricon(base,tone,s,labels=True,fonts=fonts):
 
     font_size = int(s/16)
-    font = ImageFont.truetype(fonts['thin'],font_size)
+    font = ImageFont.truetype(fonts['regular'],font_size)
+    font_thin = ImageFont.truetype(fonts['thin'],font_size)
 
     im = Image.new('RGB',(s,s),base)
     draw = ImageDraw.Draw(im)
@@ -311,22 +339,22 @@ def coloricon(base,tone,s,labels=True,fonts=fonts):
 
     if labels:
         top = "SPECTROPHOTOMETER"
-        top_width = font.getsize(top)[0]
-        draw.text((s/2 - top_width/2, font_size), top, font=font, fill="black")
+        top_width = font_thin.getsize(top)[0]
+        draw.text((s/2 - top_width/2, font_size), top, font=font_thin, fill="black")
 
-        DMIN = "DMIN"
+        DMIN = "BASE"
         DMIN_width,DMIN_height = font.getsize(DMIN)
         draw.text((s/2 - DMIN_width/2, s - DMIN_height - font_size), DMIN, font=font, fill="black")
 
-        DMAX = "DMAX"
+        DMAX = "TONE"
         DMAX_width,DMAX_height = font.getsize(DMAX)
         draw.text((s/2 - DMAX_width/2, s/2 - DMAX_height/2), DMAX, font=font, fill="white")
     
     return im
 
-def table_of_contents(d,width,fonts=fonts,theme='light'):
+def toc(d,width,fonts=fonts,theme='light'):
 
-    font_size = int(width/64)
+    font_size = int(width/32)
     font = ImageFont.truetype(fonts['thin'],font_size)
     
     if theme=='light':
