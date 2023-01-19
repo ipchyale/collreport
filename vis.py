@@ -31,7 +31,7 @@ def slider_pos(val,vmin,vrange,slider_width):
 
     return pos
 
-def slider(title,val,vmin,vmax,allvals,font=font,theme='light',rounding_digits=0):
+def slider(title,val,vmin,vmax,allvals,mtrials,font=font,theme='light',rounding_digits=0):
     
     if theme=='light':
         bg = "white"
@@ -56,6 +56,15 @@ def slider(title,val,vmin,vmax,allvals,font=font,theme='light',rounding_digits=0
         draw.line([(pos,int(slider_height*0.5-tick_height/2)),(pos,int(slider_height*0.5+tick_height/2))],width=int(slider_width/1000),fill=fill)
     
     draw.rounded_rectangle([(markpos-15,70),(markpos+15,130)],radius=5,fill=bg,outline=fill,width=4)
+
+    # trial ticks
+    if mtrials is not None:
+        for k,mtrial in enumerate(mtrials):
+            pos = slider_pos(mtrial,vmin,vrange,slider_width)
+            top_offset = 8
+            peg_top = 70
+            trial_spacer = 8
+            draw.line([(pos-15,peg_top - top_offset - trial_spacer * k),(pos+15,peg_top - top_offset - trial_spacer * k)],width=4,fill=fill)
     
     if rounding_digits is not None:
         if rounding_digits==0:
@@ -137,6 +146,17 @@ def info_panel(idx,title,font=font,font_large=font_large,theme='light'):
     
     return canvas
 
+def tombstone(metadata_dict,fonts=fonts,theme='light'):
+    
+    if theme=='light':
+        bg = "white"
+    elif theme=='dark':
+        bg = "#212121"
+    
+    fill = "grey"
+    
+    return None
+
 def draw_outline(im,width,linecolor):
         
         draw = ImageDraw.Draw(im)
@@ -144,7 +164,7 @@ def draw_outline(im,width,linecolor):
         
         return im
 
-def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,mapcol,dminhexcol,dmaxhexcol,idx_title,idx_subtitle,theme='light'):
+def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,mapcol,idx_title,idx_subtitle,allvals,theme='light'):
     
     if theme=='light':
         bg = "white"
@@ -153,71 +173,131 @@ def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,
         
     glyph = Image.open(df[glyphcol].loc[i])
     
-    tmin = df[tcol].min()
-    tmax = df[tcol].max()
-    gmin = df[gcol].min()
-    gmax = df[gcol].max()
-    cmin = df[wcol].min()
-    cmax = df[wcol].max()
-    rmin = df[rcol].min()
-    rmax = df[rcol].max()
-    tonemin = df[tonecol].min()
-    tonemax = df[tonecol].max()
     contrastmin = df[contrastcol].min()*100
     contrastmax = df[contrastcol].max()*100
-    
-    t,g,c,r,tn,ctrst = df[tcol].loc[i],df[gcol].loc[i],df[wcol].loc[i],df[rcol].loc[i],df[tonecol].loc[i],df[contrastcol].loc[i]*100
-
-    nonnull_thickness_vals = df[tcol][df[tcol].notnull()]
-    nonnull_gloss_vals = df[gcol][df[gcol].notnull()]
-    nonnull_color_vals = df[wcol][df[wcol].notnull()]
-    nonnull_roughness_vals = df[rcol][df[rcol].notnull()]
-    nonnull_tone_vals = df[tonecol][df[tonecol].notnull()]
     nonnull_contrast_vals = df[contrastcol][df[contrastcol].notnull()] * 100
 
-    sliders = vconcat(slider('THICKNESS (mm)',t,tmin,tmax,nonnull_thickness_vals,font,theme=theme,rounding_digits=None),
-                           slider('GLOSS (GU)',g,gmin,gmax,nonnull_gloss_vals,font,theme=theme),
-                           slider('BASE WARMTH (b*)',c,cmin,cmax,nonnull_color_vals,font,theme=theme),
-                           slider('ROUGHNESS (σ)',r,rmin,rmax,nonnull_roughness_vals,font,theme=theme,rounding_digits=1),
-                           slider('TONE WARMTH (b*)',tn,tonemin,tonemax,nonnull_tone_vals,font,theme=theme),
-                           slider('CONTRAST (%)',ctrst,contrastmin,contrastmax,nonnull_contrast_vals,font,theme=theme),
-                           spacer=0,theme=theme)
+    # medians for slider pegs
+    t,g,c,r,tn,ctrst = df[tcol].loc[i],df[gcol].loc[i],df[wcol].loc[i],df[rcol].loc[i],df[tonecol].loc[i],df[contrastcol].loc[i]*100
+
+
+    """
+    `allvals` cols:
+        accplate,
+        thicknessvals,
+        glossvals,
+        bstars_base,
+        bstars_tone,
+        rgbhex_base,
+        rgbhex_tone,
+        label_base,
+        label_tone,
+        texturevals
+    """
+
+    thicknessvals_flattened = [item for sublist in allvals.thicknessvals[allvals.thicknessvals.notnull()] for item in sublist]
+    tmin = min(thicknessvals_flattened)
+    tmax = max(thicknessvals_flattened)
+    
+    glossvals_flattened = [item for sublist in allvals.glossvals[allvals.glossvals.notnull()] for item in sublist]
+    gmin = min(glossvals_flattened)
+    gmax = max(glossvals_flattened)
+    
+    bstars_base_flattened = [item for sublist in allvals.bstars_base[allvals.bstars_base.notnull()] for item in sublist]
+    cmin = min(bstars_base_flattened)
+    cmax = max(bstars_base_flattened)
+    
+    bstars_tone_flattened = [item for sublist in allvals.bstars_tone[allvals.bstars_tone.notnull()] for item in sublist]
+    tonemin = min(bstars_tone_flattened)
+    tonemax = max(bstars_tone_flattened)
+
+    texture_pairs = allvals.texturevals[allvals.texturevals.notnull()]
+    texture_lists = [[float(i[1]) for i in item] for item in texture_pairs]
+    texturevals_flattened = [item for sublist in texture_lists for item in sublist]
+    rmin = min(texturevals_flattened)
+    rmax = max(texturevals_flattened)
+
+    accplate = df.accplate.loc[i]
+    allvals_i = allvals[allvals.accplate==accplate].iloc[0]
+
+    sliders = vconcat(slider('THICKNESS (mm)',t,tmin,tmax,thicknessvals_flattened,allvals_i.thicknessvals,font,theme=theme,rounding_digits=None),
+                           slider('ROUGHNESS (σ)',r,rmin,rmax,texturevals_flattened,[item[1] for item in allvals_i.texturevals],font,theme=theme,rounding_digits=2),
+                           slider('GLOSS (GU)',g,gmin,gmax,glossvals_flattened,allvals_i.glossvals,font,theme=theme),
+                           slider('BASE WARMTH (b*)',c,cmin,cmax,bstars_base_flattened,allvals_i.bstars_base,font,theme=theme),
+                           slider('TONE WARMTH (b*)',tn,tonemin,tonemax,bstars_tone_flattened,allvals_i.bstars_tone,font,theme=theme),
+                           spacer=128,theme=theme)
     
     matted_glyph = gmat(glyph,theme=theme)
     matted_glyph.thumbnail((sliders.width,sliders.width),Image.Resampling.LANCZOS)
-    
+
     glyph_and_sliders = vconcat(matted_glyph,sliders,spacer=0,theme=theme)
+
+    contrast_map = Image.open(df[mapcol].loc[i])
+    contrast_map = draw_outline(contrast_map,1,'black')
+    contrast_map = matfit(contrast_map,glyph_and_sliders.width,theme=theme)
+
+    contrast = vconcat(contrast_map,
+                       slider('CONTRAST (%)',ctrst,contrastmin,contrastmax,nonnull_contrast_vals,None,font,theme=theme),
+                       spacer=128,theme=theme)
     
     print_image = Image.open(df[pcol].loc[i])
     print_image = draw_outline(print_image,1,'black')
 
-    texture_image = Image.open(df[xcol].loc[i])
+    median_texture_path = df[xcol].loc[i]
+    median_texture_image = Image.open(median_texture_path)
     
     print_image.thumbnail((1024,1024),Image.Resampling.LANCZOS)
-    texture_image.thumbnail((1024,1024),Image.Resampling.LANCZOS)
+    median_texture_image.thumbnail((1024,1024),Image.Resampling.LANCZOS)
+    median_texture_image = bottom_left_text(median_texture_image,"σ = "+str(round(r,3)),fonts=fonts)
 
-    contrast_map = Image.open(df[mapcol].loc[i])
-    contrast_map = draw_outline(contrast_map,1,'black')
-    
-    dminhex = df[dminhexcol].loc[i]
-    dmaxhex = df[dmaxhexcol].loc[i]
-    cicon = coloricon(dminhex,dmaxhex,s=480)
-    cicon = draw_outline(cicon,1,'black')
+    additional_texture_images = [Image.open(path) for path,_ in allvals_i.texturevals if path!=median_texture_path]
+    xspacer = 32
+    thumbw = (1024 - xspacer) / 2
+    for im in additional_texture_images:
+        im.thumbnail((thumbw,thumbw),Image.Resampling.LANCZOS)
+    additional_texture_vals = [str(round(val,3)) for path,val in allvals_i.texturevals if path!=median_texture_path]
+    additional_texture_images = [bottom_left_text(im,"σ = "+val,fonts=fonts) for im,val in zip(additional_texture_images,additional_texture_vals)]
+    additional_texture_images = hconcat(*additional_texture_images,spacer=xspacer,theme=theme)
 
-    color_vis = hconcat(cicon,contrast_map,spacer=32,theme=theme)
-    
-    images = vconcat(print_image,texture_image,color_vis,spacer=64,theme=theme)
+    texture_images = vconcat(median_texture_image,additional_texture_images,spacer=64,theme=theme)
+
+    hexes_base = allvals_i.rgbhex_base
+    hexes_tone = allvals_i.rgbhex_tone
+    labels_base = allvals_i.label_base
+    labels_tone = allvals_i.label_tone
+
+    bases = hconcat(*[coloricon_single(hexes_base[j],330,'base',labels_base[j]) for j in range(len(hexes_base))],spacer=17,theme=theme)
+    tones = hconcat(*[coloricon_single(hexes_tone[j],330,'tone',labels_tone[j]) for j in range(len(hexes_tone))],spacer=17,theme=theme)
+    color_vis = vconcat(bases,tones,spacer=17,theme=theme)
+
+    images = vconcat(print_image,color_vis,spacer=64,theme=theme)
     
     infopanel = info_panel(idx_title,idx_subtitle)
     infopanel.thumbnail((48/infopanel.height*infopanel.width,48),Image.Resampling.LANCZOS)
     
     infopanel_and_images = vconcat(infopanel,images,spacer=64,theme=theme)
+
+    top_spacer = Image.new('RGB',(texture_images.width,infopanel.height),bg)
     
-    report = hconcat(infopanel_and_images,glyph_and_sliders,spacer=128,theme=theme)
+    contrast_and_texture = vconcat(contrast,texture_images,spacer=256,theme=theme)
+    spacer_contrast_texture = vconcat(top_spacer,contrast_and_texture,spacer=64,theme=theme)
+    
+    report = hconcat(infopanel_and_images,spacer_contrast_texture,glyph_and_sliders,spacer=128,theme=theme)
     
     matted_report = mat(report)
     
     return matted_report
+
+def bottom_left_text(im,s,fonts=fonts,fontsize=45,fill='white'):
+
+    draw = ImageDraw.Draw(im)
+    font = ImageFont.truetype(fonts['regular'],fontsize)
+    w,h = font.getsize(s)
+
+    offset = 32
+    draw.text((offset,im.height-h-offset),s,fill=fill,font=font)
+
+    return im
 
 def vconcat(*args,spacer=64,theme='light'):
     
@@ -279,6 +359,23 @@ def mat(im,theme='light'):
     
     matted = Image.new('RGB',(im.width + int(im.width * 0.2), im.height + int(im.height * 0.2)),bg)
     matted.paste(im,(int(im.width * 0.1),int(im.height * 0.1)))
+
+    return matted
+
+def matfit(im,fitwidth,theme='light'):
+
+    if theme=='light':
+        bg = "white"
+    elif theme=='dark':
+        bg = "#212121"
+
+    if fitwidth < im.width:
+        im.thumbnail((fitwidth,fitwidth),Image.Resampling.LANCZOS)
+
+    width_offset = int((fitwidth - im.width) / 2)
+    
+    matted = Image.new('RGB',(fitwidth, im.height),bg)
+    matted.paste(im,(width_offset,0))
 
     return matted
 
@@ -350,6 +447,53 @@ def coloricon(base,tone,s,labels=True,fonts=fonts):
         DMAX_width,DMAX_height = font.getsize(DMAX)
         draw.text((s/2 - DMAX_width/2, s/2 - DMAX_height/2), DMAX, font=font, fill="white")
     
+    return im
+
+def coloricon_single(c,s,loc,label=None,fonts=fonts,theme='light'):
+
+    if theme=='light':
+        bg = "white"
+    elif theme=='dark':
+        bg = "#212121"
+
+    font_size_loc = int(s/12)
+    font_loc = ImageFont.truetype(fonts['regular'],font_size_loc)
+
+    font_size_label = int(s/8)
+    font_label = ImageFont.truetype(fonts['regular'],font_size_label)
+
+    im = Image.new('RGB',(s,s),bg)
+    draw = ImageDraw.Draw(im)
+    draw.rounded_rectangle(
+        [(s/32, s/32), (s - s/32, s - s/32)],radius=int(s*0.15625),fill=c,outline='black',width=1
+    )
+
+    if label is not None:
+
+        if loc=='base':
+            fill = "black"
+        elif loc=='tone':
+            fill = "white"
+
+        Lab = label.split(',')
+        L = 'L: ' + Lab[0]
+        a = 'a*: ' + Lab[1]
+        b = 'b*: ' + Lab[2]
+        Lw,Lh = font_label.getsize(L)
+        aw,ah = font_label.getsize(a)
+        bw,bh = font_label.getsize(b)
+
+        topoffset = s / 5
+        spacer = s / 16
+        draw.text((s/2 - Lw/2, topoffset ), L, font=font_label, fill=fill)
+        draw.text((s/2 - aw/2, topoffset + spacer + Lh), a, font=font_label, fill=fill)
+        draw.text((s/2 - bw/2, topoffset + spacer + Lh + spacer + ah), b, font=font_label, fill=fill)
+
+        locw,loch = font_loc.getsize(loc.upper())
+        draw.text((s/2 - locw/2, s - loch - loch - loch), loc.upper(), font=font_loc, fill=fill)
+
+
+
     return im
 
 def toc(d,width,fonts=fonts,theme='light'):
