@@ -47,17 +47,27 @@ def slider(title,val,vmin,vmax,allvals,mtrials,font=font,theme='light',rounding_
     draw.line([(int(slider_width*0.1),int(slider_height*0.5)),(int(slider_width*0.9),int(slider_height*0.5))],width=int(slider_width/125),fill=fill)
 
     vrange = vmax - vmin
-    markpos = slider_pos(val,vmin,vrange,slider_width)
 
     # distribution ticks
     tick_height = slider_height / 8
-    for val in allvals:
-        pos = slider_pos(val,vmin,vrange,slider_width)
+    for allval in allvals:
+        pos = slider_pos(allval,vmin,vrange,slider_width)
         draw.line([(pos,int(slider_height*0.5-tick_height/2)),(pos,int(slider_height*0.5+tick_height/2))],width=int(slider_width/1000),fill=fill)
     
-    draw.rounded_rectangle([(markpos-15,70),(markpos+15,130)],radius=5,fill=bg,outline=fill,width=4)
+    # median peg should sit atop the distribution ticks
+    try:
+        peg = slider_pos(val,vmin,vrange,slider_width)
+        draw.rounded_rectangle([(peg-15,70),(peg+15,130)],radius=5,fill=bg,outline=fill,width=4)
+    except:
+        pass
 
     # trial ticks
+    if "ROUGH" in title:
+        try:
+            mtrials = [item[1] for item in mtrials] # this iteration, passed to `slider()`, was failing when allvals_i.textures was empty
+        except:
+            mtrials = None
+
     if mtrials is not None:
         for k,mtrial in enumerate(mtrials):
             pos = slider_pos(mtrial,vmin,vrange,slider_width)
@@ -214,7 +224,7 @@ def draw_outline(im,width,linecolor):
         
         return im
 
-def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,mapcol,acc,subacc,tombstone_dict,allvals,theme='light'):
+def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,discolorcol,mapcol,acc,subacc,tombstone_dict,allvals,theme='light'):
     
     if theme=='light':
         bg = "white"
@@ -223,13 +233,13 @@ def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,
         
     glyph = Image.open(df[glyphcol].loc[i])
     
-    contrastmin = df[contrastcol].min()*100
-    contrastmax = df[contrastcol].max()*100
-    nonnull_contrast_vals = df[contrastcol][df[contrastcol].notnull()] * 100
+    fademax = 100 - df[contrastcol].min()*100
+    fademin = 100 - df[contrastcol].max()*100
+    nonnull_fade_vals = [100 - item * 100 for item in df[contrastcol][df[contrastcol].notnull()]]
 
-    # medians for slider pegs
-    t,g,c,r,tn,ctrst = df[tcol].loc[i],df[gcol].loc[i],df[wcol].loc[i],df[rcol].loc[i],df[tonecol].loc[i],df[contrastcol].loc[i]*100
-
+    discolormin = df[discolorcol].min()*100
+    discolormax = df[discolorcol].max()*100
+    nonnull_discolor_vals = df[discolorcol][df[discolorcol].notnull()] * 100
 
     """
     `allvals` cols:
@@ -270,11 +280,21 @@ def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,
     accplate = df.accplate.loc[i]
     allvals_i = allvals[allvals.accplate==accplate].iloc[0]
 
+    # medians for slider pegs    
+    t = df[tcol].loc[i]
+    g = df[gcol].loc[i]
+    c = df[wcol].loc[i]
+    r = df[rcol].loc[i]
+    tn = df[tonecol].loc[i]
+    fdg = 100 - df[contrastcol].loc[i]*100
+    dsc = df[discolorcol].loc[i]*100
+
     sliders = vconcat(slider('THICKNESS (mm)',t,tmin,tmax,thicknessvals_flattened,allvals_i.thicknessvals,font,theme=theme,rounding_digits=None),
-                           slider('ROUGHNESS (σ)',r,rmin,rmax,texturevals_flattened,[item[1] for item in allvals_i.texturevals],font,theme=theme,rounding_digits=2),
-                           slider('GLOSS (GU)',g,gmin,gmax,glossvals_flattened,allvals_i.glossvals,font,theme=theme),
-                           slider('BASE WARMTH (b*)',c,cmin,cmax,bstars_base_flattened,allvals_i.bstars_base,font,theme=theme),
-                           spacer=64,theme=theme)
+                      slider('ROUGHNESS (σ)',r,rmin,rmax,texturevals_flattened,allvals_i.texturevals,font,theme=theme,rounding_digits=2),
+                      slider('GLOSS (GU)',g,gmin,gmax,glossvals_flattened,allvals_i.glossvals,font,theme=theme),
+                      slider('BASE WARMTH (b*)',c,cmin,cmax,bstars_base_flattened,allvals_i.bstars_base,font,theme=theme),
+                      slider('TONE WARMTH (b*)',tn,tonemin,tonemax,bstars_tone_flattened,allvals_i.bstars_tone,font,theme=theme),
+                      spacer=64,theme=theme)
     
     matted_glyph = gmat(glyph,theme=theme)
     matted_glyph.thumbnail((sliders.width,sliders.width),Image.Resampling.LANCZOS)
@@ -283,32 +303,42 @@ def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,
 
     contrast_map = Image.open(df[mapcol].loc[i])
     contrast_map = draw_outline(contrast_map,1,'black')
-    contrast_map = matfit(contrast_map,glyph_and_sliders.width,theme=theme)
+    contrast_map = wfit(contrast_map,glyph_and_sliders.width,theme=theme)
 
     contrast = vconcat(contrast_map,
-                       slider('CONTRAST (%)',ctrst,contrastmin,contrastmax,nonnull_contrast_vals,None,font,theme=theme),
-                       slider('TONE WARMTH (b*)',tn,tonemin,tonemax,bstars_tone_flattened,allvals_i.bstars_tone,font,theme=theme),
+                       slider('FADING (%)',fdg,fademin,fademax,nonnull_fade_vals,None,font,theme=theme),
+                       slider('DISCOLORATION (%)',dsc,discolormin,discolormax,nonnull_discolor_vals,None,font,theme=theme),
                        spacer=64,theme=theme)
     
     print_image = Image.open(df[pcol].loc[i])
     print_image = draw_outline(print_image,1,'black')
+    print_image.thumbnail((1024,1024),Image.Resampling.LANCZOS)
 
     median_texture_path = df[xcol].loc[i]
-    median_texture_image = Image.open(median_texture_path)
     
-    print_image.thumbnail((1024,1024),Image.Resampling.LANCZOS)
-    median_texture_image.thumbnail((1024,1024),Image.Resampling.LANCZOS)
-    median_texture_image = bottom_left_text(median_texture_image,"σ = "+str(round(r,3)),fonts=fonts)
+    try:
+        median_texture_image = Image.open(median_texture_path)
+        median_texture_image.thumbnail((1024,1024),Image.Resampling.LANCZOS)
+        median_texture_image = bottom_left_text(median_texture_image,"σ = "+str(round(r,3)),fonts=fonts)
+    except:
+        median_texture_image = Image.new('RGB',(1024,1024),"#dcdcdc")
 
-    additional_texture_images = [Image.open(path) for path,_ in allvals_i.texturevals if path!=median_texture_path]
     xspacer = 32
-    thumbw = (1024 - xspacer) / 2
-    for im in additional_texture_images:
-        im.thumbnail((thumbw,thumbw),Image.Resampling.LANCZOS)
-    additional_texture_vals = [str(round(val,3)) for path,val in allvals_i.texturevals if path!=median_texture_path]
-    additional_texture_images = [bottom_left_text(im,"σ = "+val,fonts=fonts) for im,val in zip(additional_texture_images,additional_texture_vals)]
+    thumbw = int((1024 - xspacer) / 2)
+    
+    try:
+        additional_texture_images = [Image.open(path) for path,_ in allvals_i.texturevals if path!=median_texture_path]
+        if len(additional_texture_images) > 0:
+            for im in additional_texture_images:
+                im.thumbnail((thumbw,thumbw),Image.Resampling.LANCZOS)
+            additional_texture_vals = [str(round(textureval,3)) for path,textureval in allvals_i.texturevals if path!=median_texture_path]
+            additional_texture_images = [bottom_left_text(im,"σ = "+textureval,fonts=fonts) for im,textureval in zip(additional_texture_images,additional_texture_vals)]
+        else:
+            additional_texture_images = [Image.new('RGB',(thumbw,thumbw),"#dcdcdc") for _ in range(2)]
+    except:
+        additional_texture_images = [Image.new('RGB',(thumbw,thumbw),"#dcdcdc") for _ in range(2)]
+    
     additional_texture_images = hconcat(*additional_texture_images,spacer=xspacer,theme=theme)
-
     texture_images = vconcat(median_texture_image,additional_texture_images,spacer=64,theme=theme)
 
     hexes_base = allvals_i.rgbhex_base
@@ -381,7 +411,7 @@ def hconcat(*args,spacer=64,theme='light'):
         
         return canvas
 
-def block_text(s,font=font_serif,width=70,theme='light'):
+def block_text(s,fonts=fonts,fontsize=36,width=70,theme='light'):
 
     swrapped = textwrap.fill(s,width=width)
     
@@ -391,6 +421,8 @@ def block_text(s,font=font_serif,width=70,theme='light'):
     elif theme=='dark':
         bg = "#212121"
         fill = "grey"
+
+    font = ImageFont.truetype(fonts['serif'],fontsize)
         
     blockWidth,blockHeight = font.getsize_multiline(swrapped)
     vincr = int(blockHeight * 0.1)
@@ -412,7 +444,7 @@ def mat(im,theme='light'):
 
     return matted
 
-def matfit(im,fitwidth,theme='light'):
+def wfit(im,fitwidth,theme='light',position='center'):
 
     if theme=='light':
         bg = "white"
@@ -422,12 +454,39 @@ def matfit(im,fitwidth,theme='light'):
     if fitwidth < im.width:
         im.thumbnail((fitwidth,fitwidth),Image.Resampling.LANCZOS)
 
-    width_offset = int((fitwidth - im.width) / 2)
+    if position == 'center':
+        width_offset = int((fitwidth - im.width) / 2)
+    elif position == 'left':
+        width_offset = 0
+    elif position == 'right':
+        width_offset = fitwidth - im.width
     
     matted = Image.new('RGB',(fitwidth, im.height),bg)
     matted.paste(im,(width_offset,0))
 
     return matted
+
+def hfit(im,fitheight,theme='light',position='center'):
+        
+        if theme=='light':
+            bg = "white"
+        elif theme=='dark':
+            bg = "#212121"
+    
+        if fitheight < im.height:
+            im.thumbnail((fitheight,fitheight),Image.Resampling.LANCZOS)
+    
+        if position == 'center':
+            height_offset = int((fitheight - im.height) / 2)
+        elif position == 'top':
+            height_offset = 0
+        elif position == 'bottom':
+            height_offset = fitheight - im.height
+        
+        matted = Image.new('RGB',(im.width,fitheight),bg)
+        matted.paste(im,(0,height_offset))
+    
+        return matted
 
 def glyph_legend(side=200,theme='light'):
 
@@ -472,30 +531,39 @@ def glyph_legend(side=200,theme='light'):
 
     return gmat(mat(im))
 
-def coloricon(base,tone,s,labels=True,fonts=fonts):
+def coloricon(base,tone,side,labels=False,fonts=fonts,bg='white'):
 
-    font_size = int(s/16)
+    font_size = int(side/16)
     font = ImageFont.truetype(fonts['regular'],font_size)
     font_thin = ImageFont.truetype(fonts['thin'],font_size)
 
-    im = Image.new('RGB',(s,s),base)
+    if bg is None:
+        im = Image.new('RGBA',(side,side),bg)
+    else:
+        im = Image.new('RGB',(side,side),bg)
+    
     draw = ImageDraw.Draw(im)
+    
     draw.rounded_rectangle(
-        [(s/2 - s/4, s/2 - s/4), (s/2 + s/4, s/2 + s/4)],radius=int(s*0.15625),fill=tone
+        [(side/16,side/16),(side - side/16, side - side/16)],radius=int(side*0.15625),fill=base
+    )
+   
+    draw.rounded_rectangle(
+        [(side/2 - side/4, side/2 - side/4), (side/2 + side/4, side/2 + side/4)],radius=int(side*0.15625),fill=tone
     )
 
     if labels:
         top = "SPECTROPHOTOMETER"
         top_width = font_thin.getsize(top)[0]
-        draw.text((s/2 - top_width/2, font_size), top, font=font_thin, fill="black")
+        draw.text((side/2 - top_width/2, font_size), top, font=font_thin, fill="black")
 
         DMIN = "BASE"
         DMIN_width,DMIN_height = font.getsize(DMIN)
-        draw.text((s/2 - DMIN_width/2, s - DMIN_height - font_size), DMIN, font=font, fill="black")
+        draw.text((side/2 - DMIN_width/2, side - DMIN_height - font_size), DMIN, font=font, fill="black")
 
         DMAX = "TONE"
         DMAX_width,DMAX_height = font.getsize(DMAX)
-        draw.text((s/2 - DMAX_width/2, s/2 - DMAX_height/2), DMAX, font=font, fill="white")
+        draw.text((side/2 - DMAX_width/2, side/2 - DMAX_height/2), DMAX, font=font, fill="white")
     
     return im
 
@@ -572,6 +640,27 @@ def toc(d,width,fonts=fonts,theme='light'):
         toclines.append(tocline)
         
     return vconcat(*toclines,spacer=int(width/64))
+
+def textline(s,fonts=fonts,fonttype='regular',fontsize=90,theme='light'):
+    
+    if theme=='light':
+        bg = "white"
+    elif theme=='dark':
+        bg = "#212121"
+    
+    fill = "grey"
+    
+    font = ImageFont.truetype(fonts[fonttype],fontsize)
+    w,h = font.getsize(s)
+    
+    canvas = Image.new('RGB',(w,h),bg)
+    draw = ImageDraw.Draw(canvas)
+    
+    draw.text((0,0),text=s,font=font,fill=fill)
+    
+    return canvas
+
+
 
 
 
