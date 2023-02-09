@@ -31,7 +31,7 @@ def slider_pos(val,vmin,vrange,slider_width):
 
     return pos
 
-def slider(title,val,vmin,vmax,allvals,mtrials,font=font,theme='light',rounding_digits=0):
+def slider(title,val,vmin,vmax,allvals,mtrials,font=font,theme='light',rounding_digits=0,pegfill=None):
     
     if theme=='light':
         bg = "white"
@@ -39,6 +39,9 @@ def slider(title,val,vmin,vmax,allvals,mtrials,font=font,theme='light',rounding_
         bg = "#212121"
         
     fill = "grey"
+
+    if pegfill is None:
+        pegfill = bg
     
     canvas = Image.new('RGB',(1000,200),bg)
     slider_width,slider_height = canvas.size
@@ -57,7 +60,7 @@ def slider(title,val,vmin,vmax,allvals,mtrials,font=font,theme='light',rounding_
     # median peg should sit atop the distribution ticks
     try:
         peg = slider_pos(val,vmin,vrange,slider_width)
-        draw.rounded_rectangle([(peg-15,70),(peg+15,130)],radius=5,fill=bg,outline=fill,width=4)
+        draw.rounded_rectangle([(peg-15,70),(peg+15,130)],radius=5,fill=pegfill,outline=fill,width=4)
     except:
         pass
 
@@ -145,7 +148,7 @@ def info_panel(idx,title,font=font,font_large=font_large,theme='light'):
     fontWidthIdx,fontHeightIdx = font_large.getsize(idx)
     fontWidthTitle,fontHeightTitle = font.getsize(title)
 
-    spacer = font_large.getsize("M")[0] # M is the widest character in a font, usually
+    spacer = font_large.getsize("1")[0] # thin space
     panelWidth = fontWidthIdx + fontWidthTitle + spacer
     
     canvas = Image.new('RGB',(panelWidth,fontHeightIdx),bg)
@@ -180,6 +183,7 @@ def tombstone(tombstone_dict,fonts=fonts,theme='light'):
     nationality = tombstone_dict.get('nationality')
     active = tombstone_dict.get('active')
     worktitle = tombstone_dict.get('worktitle')
+    subtitle = tombstone_dict.get('subtitle')
     year = tombstone_dict.get('year')
     medium = tombstone_dict.get('medium')
     dims = tombstone_dict.get('dims')
@@ -191,6 +195,8 @@ def tombstone(tombstone_dict,fonts=fonts,theme='light'):
 
     fontWidthArtist,fontHeightArtist = font_artist.getsize(artist)
     fontWidthWorktitle,fontHeightWorktitle = font_worktitle.getsize(worktitle)
+
+    fontWidthSubtitle,fontHeightSubtitle = font.getsize(subtitle)
     fontWidthNationality,fontHeightNationality = font.getsize(nationality)
     fontWidthActive,fontHeightActive = font.getsize(active)
     fontWidthYear,fontHeightYear = font.getsize(year)
@@ -201,8 +207,8 @@ def tombstone(tombstone_dict,fonts=fonts,theme='light'):
     line_spacer = 16
     section_spacer = 32
 
-    tombstoneWidth = max([fontWidthArtist,fontWidthNationality+line_spacer+fontWidthActive,fontWidthWorktitle+line_spacer+fontWidthYear,fontWidthMedium,fontWidthDims,fontWidthCredit])
-    tombstoneHeight = fontHeightArtist + line_spacer + max([fontHeightNationality,fontHeightActive]) + section_spacer * 2 + max([fontHeightWorktitle,fontHeightYear]) + section_spacer + fontHeightMedium + line_spacer + fontHeightDims + line_spacer + fontHeightCredit
+    tombstoneWidth = max([fontWidthArtist,fontWidthNationality+line_spacer+fontWidthActive,fontWidthWorktitle+line_spacer+fontWidthYear,fontWidthSubtitle,fontWidthMedium,fontWidthDims,fontWidthCredit])
+    tombstoneHeight = fontHeightArtist + line_spacer + max([fontHeightNationality,fontHeightActive]) + section_spacer * 2 + max([fontHeightWorktitle,fontHeightYear]) + line_spacer + fontHeightSubtitle + section_spacer + fontHeightMedium + line_spacer + fontHeightDims + line_spacer + fontHeightCredit
     tombstone_text = Image.new('RGB',(tombstoneWidth,tombstoneHeight),bg)
 
     draw = ImageDraw.Draw(tombstone_text)
@@ -211,9 +217,10 @@ def tombstone(tombstone_dict,fonts=fonts,theme='light'):
     draw.text((fontWidthNationality+line_spacer,fontHeightArtist+line_spacer),text=active,font=font,fill=fill)
     draw.text((0,fontHeightArtist+line_spacer+max([fontHeightNationality,fontHeightActive])+section_spacer*2),text=worktitle,font=font_worktitle,fill=fill)
     draw.text((fontWidthWorktitle+line_spacer,fontHeightArtist+line_spacer+max([fontHeightNationality,fontHeightActive])+section_spacer*2),text=year,font=font,fill=fill)
-    draw.text((0,fontHeightArtist+line_spacer+max([fontHeightNationality,fontHeightActive])+section_spacer*2+max([fontHeightWorktitle,fontHeightYear])+section_spacer),text=medium,font=font,fill=fill)
-    draw.text((0,fontHeightArtist+line_spacer+max([fontHeightNationality,fontHeightActive])+section_spacer*2+max([fontHeightWorktitle,fontHeightYear])+section_spacer+fontHeightMedium+line_spacer),text=dims,font=font,fill=fill)
-    draw.text((0,fontHeightArtist+line_spacer+max([fontHeightNationality,fontHeightActive])+section_spacer*2+max([fontHeightWorktitle,fontHeightYear])+section_spacer+fontHeightMedium+line_spacer+fontHeightDims+line_spacer),text=credit,font=font,fill=fill)
+    draw.text((0,fontHeightArtist+line_spacer+max([fontHeightNationality,fontHeightActive])+section_spacer*2+max([fontHeightWorktitle,fontHeightYear])+line_spacer),text=subtitle,font=font,fill=fill)
+    draw.text((0,fontHeightArtist+line_spacer+max([fontHeightNationality,fontHeightActive])+section_spacer*2+max([fontHeightWorktitle,fontHeightYear])+line_spacer+fontHeightSubtitle+section_spacer),text=medium,font=font,fill=fill)
+    #draw.text((0,fontHeightArtist+line_spacer+max([fontHeightNationality,fontHeightActive])+section_spacer*2+max([fontHeightWorktitle,fontHeightYear])+section_spacer+fontHeightMedium+line_spacer),text=dims,font=font,fill=fill)
+    #draw.text((0,fontHeightArtist+line_spacer+max([fontHeightNationality,fontHeightActive])+section_spacer*2+max([fontHeightWorktitle,fontHeightYear])+section_spacer+fontHeightMedium+line_spacer+fontHeightDims+line_spacer),text=credit,font=font,fill=fill)
 
     return tombstone_text
 
@@ -224,7 +231,7 @@ def draw_outline(im,width,linecolor):
         
         return im
 
-def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,discolorcol,mapcol,acc,subacc,tombstone_dict,allvals,theme='light'):
+def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,lowtonecol,basesatcol,mapcol,acc,subacc,tombstone_dict,allvals,theme='light'):
     
     if theme=='light':
         bg = "white"
@@ -233,13 +240,13 @@ def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,
         
     glyph = Image.open(df[glyphcol].loc[i])
     
-    fademax = 100 - df[contrastcol].min()*100
-    fademin = 100 - df[contrastcol].max()*100
-    nonnull_fade_vals = [100 - item * 100 for item in df[contrastcol][df[contrastcol].notnull()]]
+    lowtonemin = df[lowtonecol].min()*100
+    lowtonemax = df[lowtonecol].max()*100
+    nonnull_lowtone_vals = [item * 100 for item in df[lowtonecol][df[lowtonecol].notnull()]]
 
-    discolormin = df[discolorcol].min()*100
-    discolormax = df[discolorcol].max()*100
-    nonnull_discolor_vals = df[discolorcol][df[discolorcol].notnull()] * 100
+    basesatmin = df[basesatcol].min()*100
+    basesatmax = df[basesatcol].max()*100
+    nonnull_basesat_vals = df[basesatcol][df[basesatcol].notnull()] * 100
 
     """
     `allvals` cols:
@@ -286,14 +293,14 @@ def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,
     c = df[wcol].loc[i]
     r = df[rcol].loc[i]
     tn = df[tonecol].loc[i]
-    fdg = 100 - df[contrastcol].loc[i]*100
-    dsc = df[discolorcol].loc[i]*100
+    lt = df[lowtonecol].loc[i]*100
+    bs = df[basesatcol].loc[i]*100
 
     sliders = vconcat(slider('THICKNESS (mm)',t,tmin,tmax,thicknessvals_flattened,allvals_i.thicknessvals,font,theme=theme,rounding_digits=None),
                       slider('ROUGHNESS (σ)',r,rmin,rmax,texturevals_flattened,allvals_i.texturevals,font,theme=theme,rounding_digits=2),
                       slider('GLOSS (GU)',g,gmin,gmax,glossvals_flattened,allvals_i.glossvals,font,theme=theme),
                       slider('BASE WARMTH (b*)',c,cmin,cmax,bstars_base_flattened,allvals_i.bstars_base,font,theme=theme),
-                      slider('TONE WARMTH (b*)',tn,tonemin,tonemax,bstars_tone_flattened,allvals_i.bstars_tone,font,theme=theme),
+                      slider('IMAGE WARMTH (b*)',tn,tonemin,tonemax,bstars_tone_flattened,allvals_i.bstars_tone,font,theme=theme),
                       spacer=64,theme=theme)
     
     matted_glyph = gmat(glyph,theme=theme)
@@ -301,13 +308,13 @@ def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,
 
     glyph_and_sliders = vconcat(matted_glyph,sliders,spacer=0,theme=theme)
 
-    contrast_map = Image.open(df[mapcol].loc[i])
-    contrast_map = draw_outline(contrast_map,1,'black')
-    contrast_map = wfit(contrast_map,glyph_and_sliders.width,theme=theme)
+    kmap = Image.open(df[mapcol].loc[i])
+    kmap = draw_outline(kmap,1,'black')
+    kmap = wfit(kmap,glyph_and_sliders.width,theme=theme)
 
-    contrast = vconcat(contrast_map,
-                       slider('FADING (%)',fdg,fademin,fademax,nonnull_fade_vals,None,font,theme=theme),
-                       slider('DISCOLORATION (%)',dsc,discolormin,discolormax,nonnull_discolor_vals,None,font,theme=theme),
+    condition = vconcat(kmap,
+                       slider('IMAGE LIGHTNESS (%)',lt,lowtonemin,lowtonemax,nonnull_lowtone_vals,None,font,theme=theme,pegfill='magenta'),
+                       slider('BASE SATURATION (%)',bs,basesatmin,basesatmax,nonnull_basesat_vals,None,font,theme=theme,pegfill='cyan'),
                        spacer=64,theme=theme)
     
     print_image = Image.open(df[pcol].loc[i])
@@ -356,13 +363,13 @@ def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,contrastcol,
     #infopanel.thumbnail((48/infopanel.height*infopanel.width,48),Image.Resampling.LANCZOS)
     
     infopanel_print_tombstone = vconcat(infopanel,print_image,tombstone_text,spacer=64,theme=theme)
-    infopanel_print_tombstone_contrast = vconcat(infopanel_print_tombstone,contrast,spacer=192,theme=theme)
+    infopanel_print_tombstone_condition = vconcat(infopanel_print_tombstone,condition,spacer=192,theme=theme)
 
     colorvis_texture = vconcat(colorvis,texture_images,spacer=64,theme=theme)
     top_spacer = Image.new('RGB',(texture_images.width,infopanel.height),bg)
     spacer_colorvis_texture = vconcat(top_spacer,colorvis_texture,spacer=64,theme=theme)
     
-    report = hconcat(infopanel_print_tombstone_contrast,spacer_colorvis_texture,glyph_and_sliders,spacer=192,theme=theme)
+    report = hconcat(infopanel_print_tombstone_condition,spacer_colorvis_texture,glyph_and_sliders,spacer=192,theme=theme)
     
     matted_report = mat(report)
     

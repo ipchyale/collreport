@@ -1,0 +1,10 @@
+and language describing these dimensions is typically printed on boxes of photographic papers and used in photographic sample books and brochures to characterize and distinguish different paper surfaces.
+
+Typically, characterization along these dimensions is not sufficient for precise forensic identification of a paper brand—there are simply too many distinct paper brands that share similar combinations of characteristics. However, we believe that this quartet of properties defines a very important signal about the artist’s expressive intent, and we identify a photograph’s expressive valence—i.e., more or less expressive—using these properties.
+
+
+A photographic paper is more expressive to the extent that it is thicker, warmer, rougher, and more matte; it is less expressive to the extent that it is thinner, cooler, smoother, and glossier. Pictorialist photographs, for example, will typically be more expressive (and more “subjective” in character), and prints used in photojournalism will typically be less expressive (and more “objective” in character). 
+
+This model of artistic intent is, to some extent, an innovation of the Lens Media Lab—and Paul Messier in particular—but it is grounded very directly in the marketing and advertising of photographic papers by the manufacturers themselves and can be found in the comparisons between photographic artists and genres.
+
+Rough papers are more expressive because they break up fine visual detail. This means that the resulting photographic representations are less precise, less objective, and thus more directly under the expressive control of the artist. An “objective” photograph is not like this: its specific visual character is determined almost entirely by the physical scene it depicts.
