@@ -90,5 +90,29 @@ K
 
 
 
+CLUSTERING AND GENOME NEIGHBORS
+
+1. Cluster artist in isolation, but in genome-wide space
+2. Find genome neighbors for each cluster 
+   -use notion of interiority to define neighbor threshold
+   -choose neighbor distance target
+   -currently, target is the centroid (mean)
+   -interiority is defined as "closer than farthest artist member"
+3. Genome neighbor search can be thresholded by date or other properties
+
+    ISSUES
+      -Interiority is probably too permissive now
+      -It's possible that finding a small number of neighbors for each artist member is better?
+      -But really, the key is getting better artist clusters
+      -And once you get them, maybe using a density definition of the centroid, and possibly placing the neighbor threshold closer in 
+      -I think what I'm seeing now is that I get somewhat heterogeneous clusters, and then there are SO MANY genome neighbors at least as close as the farthest artist members
+      -It's possible taking median instead of mean would help too
+      -But really, again, I think the core issue is that I'm getting loose clusters
+      -May need to develop a custom way of clustering this data, which is low-dimensional and very diffuse --- lots of the sim space is occupied
+
+
+
+
+
      
 
