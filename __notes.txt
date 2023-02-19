@@ -93,6 +93,26 @@ K
 CLUSTERING AND GENOME NEIGHBORS
 
 1. Cluster artist in isolation, but in genome-wide space
+   -Why?
+       -You can't cluster an artist in its own space --- too likely to find phantom distinctions
+       -We saw this with Talbot: his gloss values varied from 2-5 GU. That probably doesn't even exceed our measurement error
+        -So, if we cluster in a space where one dimension is gloss, normed by these boundaries, we will make distinctions where there are none
+       -You need the genome BOUNDS to tell you whether a difference matters or not
+       -However, you don't want to cluster an artist together with the genome
+        -The genome contains too many items that are irrelevant to a given artist, and we don't want those items exerting pressure on the grouping
+        -Moreover, the genome is WAY bigger than any artist collection, and we don't want it to dictate where the cut points are 
+         -Clustering in this space is VERY difficult. The data is not clumpy. Thus, clustering algorithms sometimes return weird cut points
+          -We don't want those cut points authored by papers that are irrelevant to the artist at hand
+       -I've had some success 'clustering' the genome using 3-4 bin edges per axis
+        -This is how GEP plots work in Paperbase
+        -This creates a lot of clusters, however: right now, Paperbase uses 79
+        -Moreover, an artist's body of work is not a random collection of papers across the genome
+         -It is a carefully curated shortlist of papers that were available to them
+         -It has a discrete causal history
+         -Thus, I don't want global cut points to warp this history
+         -We have measurement error, and we have irrelevant similarities in this data
+         -I want the artist's own physical outputs to be the substrate on which the clustering analysis works
+         -It respects the fact that each artist, in their work, is carving out a legible history, one that cuts its own veins in the space 
 2. Find genome neighbors for each cluster 
    -use notion of interiority to define neighbor threshold
    -choose neighbor distance target
@@ -100,16 +120,118 @@ CLUSTERING AND GENOME NEIGHBORS
    -interiority is defined as "closer than farthest artist member"
 3. Genome neighbor search can be thresholded by date or other properties
 
-    ISSUES
-      -Interiority is probably too permissive now
-      -It's possible that finding a small number of neighbors for each artist member is better?
-      -But really, the key is getting better artist clusters
-      -And once you get them, maybe using a density definition of the centroid, and possibly placing the neighbor threshold closer in 
-      -I think what I'm seeing now is that I get somewhat heterogeneous clusters, and then there are SO MANY genome neighbors at least as close as the farthest artist members
-      -It's possible taking median instead of mean would help too
-      -But really, again, I think the core issue is that I'm getting loose clusters
-      -May need to develop a custom way of clustering this data, which is low-dimensional and very diffuse --- lots of the sim space is occupied
+ISSUES
+  -Interiority is probably too permissive now
+  -It's possible that finding a small number of neighbors for each artist member is better?
+  -But really, the key is getting better artist clusters
+  -And once you get them, maybe using a density definition of the centroid, and possibly placing the neighbor threshold closer in 
+  -I think what I'm seeing now is that I get somewhat heterogeneous clusters, and then there are SO MANY genome neighbors at least as close as the farthest artist members
+  -It's possible taking median instead of mean would help too
+  -But really, again, I think the core issue is that I'm getting loose clusters
+  -May need to develop a custom way of clustering this data, which is low-dimensional and very diffuse --- lots of the sim space is occupied
 
+ALGORITHMS 
+  -We've used k-means and hierarchical clustering algorithms thus far
+  -But they have issues: they force items into clusters, for one, even if those items are noisy
+  -So, we could use DBSCAN
+   -But that has its own issues: one is that you have to tweak the settings A LOT
+   -And it tends towards treating everything as noise --- you have to mess with `eps` and `min_samples` to get what you want
+   -However, a bigger issue is that it only seems to work really well with clusters of similar density
+  -So, an alternative to this is HDBSCAN, which is hierarchical and allows for clusters of different densities
+  -But ANOTHER issue is simply that our simspace is not clumpy
+   -We can make it look less clumpy with UMAP, but the problem remains: we have low-dimensional data, and it's very easy to see where UMAP has warped our space
+   -When you are in higher dimensions, your space will be sparser, almost always, and clustering tends to work well as a way of managing that sparsity
+   -But when you have a lower dimensional space that is pretty filled out, you're just not going to get great clusters
+   -I don't think the answer is to make it seem artifically clumpy with UMAP
+   -I'm not sure what the answer is, however
+
+NORM 
+   -For a while, I was always using a raw norm, although in Paperbase, the norms are percentiles
+   -It's a little unclear to me which I should use
+   -I now lean towards the percentile norms, because the impact of weird outliers is so common and so boring
+   -But in any case, this is something to consider
+   -One problem with the rank norms is that you also lose interior differences, and the data is thus even harder to cluster
+
+OUTLIERS  
+   -Outliers can be interesting, and the density-based clustering algorithms can handle them
+   -However, there are legitimate outliers, and illegitimate ones, and you need to find out which are which
+   -For us, there are usually several illegitimate roughness outliers that result from bad texture captures
+    -The texture algorithm is not the problem here: it does a good job of finding these spurious outliers, actually
+    -But usually they result from getting a micrograph at the edge of the photo, and then that hard edge makes it into the std computation
+   -We see this in Alvarez-Bravo, which is making it very difficult to cluster the rest of the data
+   -So, I will simply have to eliminate those from the analysis, or find a way to slot them into clusters based on their other qualities
+   -One thing you can sometimes try is to crop them from the start. Right now, all we need is 768x768
+
+LESSONS FROM EXPERIMENTS
+   -UMAP warps the space, and the results are not what you'd want
+   -I think it's that our data is too small and low-dimensional, and not clumpy
+    -So, if you enforce clumpiness, it will be false  
+   -UMAP is unusable for clustering, for neighbor finding, all of it
+   -Because our data is not clumpy, I think we need to do NN on individual items
+   -Maybe we can build clusters after that?
+    -Either by creating a graph representation
+    -Or perhaps by looking at neighbor overlap
+    -Or just clustering on the points we end up with when we find neighbors 
+   -Or, we could just cluster on Lola in some way, and then do NN 
+   -Checking a good clustering 
+    -Making a minimum set of groupings it should agree with 
+     -We could perhaps find these automatically
+     -Like if two points share X number of neighbors, they must be in same cluster?
+     -Or just manually go through and do some grouping 
+
+NEW CLUSTERING ALGORITHM
+
+-This is an algorithm that would be special to our situation, where we have points we want to cluster, and a background of other points
+-The core idea is this:
+ -Nearest neighbors is working great in this space, and it's pretty fast (because only 4d)
+ -This will always be the case with these collections:
+  -Small number of items to cluster 
+  -Roughly 5500 background points 
+  -4d
+-We want our clustering algorithm to be easy to understand, and to follow an explicitly reasonable path
+ -We want these good neighbor relations --- from item to genome item --- to be what dictates our clustering
+  -Why not just cluster using Lola plus genome?
+   -We want the neighbor relations to be the crux, because we don't care about clusters of papers in general
+    -We care about the ones gathered around our collection items 
+  -Okay, but why use the genome points at all at this stage? Why not just bring them in later, as friends?
+   -They can help guide us between collection items that vary a bit because of natural paper variation or measurement variance
+   -The genome is vast, and gives us islands of density 
+   -The collections are small, and can either lack important connective tissue, or represent too small a sample of paper types
+-The way to understand this approach is basically:
+ -We ARE clustering with Lola+Genome, but we are doing it in a way guided by Lola
+  -We are allowing Lola points to "invite" parts of the genome to the clustering party
+  -And we are using explicit definitions of invitee relations to decide who gets to "sit together" (belong to the same group) 
+  -These explicit definitions might in fact be approximated by existing algorithms, but our approach is more interpretable
+  -It is understandable to anyone who would understand the analogy case from party planning 
+  -You wouldn't seat guests at wedding tables by reference to a mass of uninvited guests who won't be attending
+   -You don't want irrelevant people to be dictating your seating arrangement
+-Parameters
+ -Quick setup: a "member" is a Lola print; a "guest" is a genome paper
+ -I haven't decided yet exactly how this should work
+  -number of guests per member 
+  -maximum member-guest distance (like, 'family only')
+-Algorithm 
+ -Some possibilities
+  -every member starts with k guests, "with replacement", meaning members can invite the same guest
+   -find the # clusters and cluster definitions that minimize the number of unique guests (since some will be shared)
+    -assuming that guests become 'unique' only within a cluster 
+     -otherwise, I think, the cluster would play no role in unique-guest-minimization
+    -and assuming that members can only sit at the same table together if they share at least one guest
+   -guests invited by multiple members get marked as such, and their metadata properties get higher billing
+  -ok great, now how does this actually compute?
+   -this is more challenging, but probably can be solved with graph theory
+    -because, we start by taking a continous space and turning it into an "invite" graph 
+
+-another advantage of this approach over simply clustering on lola + genome
+ -we can now identify prints that cannot invite a single guest: no guest close enough
+ -that's an interesting case we would have ignored before
+
+So, outputs:
+-clustering
+-genome guests, and noting which guests are multiply invited
+-which tables are linked
+-which members can invite no guests
+-which members can invite guests but cannot share a table with any other members 
 
 
 
