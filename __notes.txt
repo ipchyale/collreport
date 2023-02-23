@@ -233,6 +233,66 @@ So, outputs:
 -which members can invite no guests
 -which members can invite guests but cannot share a table with any other members 
 
+Another point about justifying how we are doing this:
+-Someone might ask, why let the genome decide the clusters (via guest-sharing maximization --- or we might say, unique guest minimization)?
+ -Because the clusters are only important insofar as we use them to characterize the genome neighbors of a group of prints
+ -Once we've done the NN on the genome, the clusters are really just a structured way to talk about the print members
+ -And what we want to know is: how are they connected to the genome?
+ -Moreover, if two prints are very very close together, they will have all the same genome guests anyway, since all are in the same space
+ -The guest-sharing thing is a device that gives us a connection to the reference collection, which we care about
+  -And it also gives us a discrete way of deciding whether two print members belong together in a cluster
+ -Moreover, again, there is no clustering algorithm in existence that delivers what we are doing here
+  -We have two kinds of noise:
+   -no genome guests
+   -no guests shared with any other members 
+ -The nature of our problem involves two sets of points, members and guests, and they have distinct ways of mattering
+  -We can't just use some existing algorithm
+
+LESSONS 
+
+Well, that didn't work --- at least, not how I planned. But I learned a bunch of lessons.
+-First, the core problem was that I had set myself to solve a combinatorics / set theory problem that requires a massive amount of computation 
+-And every conceivable way of making the problem easier involved adverting to the numerical feature space information I had discarded
+-I suppose that I changed the nature of the problem from numerical to categorical because I wanted to place certain constraints on solutions
+ -I wanted to respect the print/reference duality of our data
+ -I wanted to have lots of interesting categories of prints, like "lonely", "outsider"
+-I also wanted the final results to be both interpretable and defensible, and that's tough to do with, say, DBSCAN
+-But ultimately, the problem is too expensive to solve with combinatorics
+ -I'm sure there is an optimal solution, but we can get very close, I'm sure, just using DBSCAN and a few constraints 
+
+ASIDE
+-I thought I'd be able to develop a new clustering algorithm 
+-But I had never thought that much about clustering, really 
+-More, perhaps, than the average fella working on supervised models, but not beyond thinking about simspaces and k-means vs hierarchical 
+-Part of it was that I used to use clustering algorithms on _image data_, and it's VERY EASY to check if your image clusters are bad 
+ -So, clustering is VERY EFFECTIVE for images, since they are crazy high dimensional and the space is clumpy 
+ -AND it is very easy to CHECK how it's doing, because although images are very high-dimensional, our visual systems can read them instantly
+-Clustering with data that is not like this is much tougher 
+ -Our data is low-dimensional and not clumpy 
+ -And it's not so easy to check 
+
+
+NEW APPROACH: DBSCAN w/ CONSTRAINTS
+
+1. Start by choosing a _d_ that will create an intracluster distance limit that reaches our measurement errors at least 
+   -the idea is that we want to use a domain-relevant notion of 'different paper', and our criterion can't be stricter than our instruments can detect 
+   -We do this by: 
+    -choosing _d_ (maybe start with 0.05)
+    -finding pairs of items in the data that sit at this distance, and looking at their raw measurement diffs
+    -Checking if these exceed our measurement error 
+    -If not, increase _d_  AT LEAST until we've reached our measurement error in every dimension 
+2. Use _d_ to then have each member invite guests 
+3. Members without guests are "lonelies", make a note of them but remove from data 
+4. Members that share no guests with any other members are "outsiders", make note, remove 
+5. Run DBSCAN on what remains (non-lonely, insider members only)
+   -always keep min_samples at 2, since we will have clusters that small 
+   -drive eps as high as possible while still keeping an "allowable tabling" (with d = 0.07, my eps is ~0.03)
+    -this means every member of a cluster must share at least one guest with every other member at the table
+6. Check guest collapse
+7. Check whether any guests are shared across clusters --- shouldn't be
+   -The idea is that we don't want any clusters that contain points as far apart as with points in other clusters 
+    -So, clusters need to be both dense and well-separated from other clusters 
+    
 
 
 
