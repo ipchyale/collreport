@@ -2,6 +2,7 @@ from PIL import Image,ImageDraw,ImageFont
 import os
 import textwrap
 import numpy as np
+from copy import deepcopy
 
 FONTDIR = os.path.expanduser("~") + "/fonts/"
 
@@ -100,7 +101,7 @@ def slider(title,val,vmin,vmax,allvals,mtrials,font=font,theme='light',rounding_
 def gmat(im,font=font,theme='light',top='WARM',right='MATTE',bottom='ROUGH',left='THICK'):
 
     if theme=='light':
-        bg = "white"
+        bg = "gainsboro"
     elif theme=='dark':
         bg = "#212121"
     
@@ -310,7 +311,7 @@ def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,lowtonecol,b
 
     kmap = Image.open(df[mapcol].loc[i])
     kmap = draw_outline(kmap,1,'black')
-    kmap = wfit(kmap,glyph_and_sliders.width,theme=theme)
+    kmap = hfit(kmap,glyph_and_sliders.width,theme=theme)
 
     condition = vconcat(kmap,
                        slider('IMAGE LIGHTNESS (%)',lt,lowtonemin,lowtonemax,nonnull_lowtone_vals,None,font,theme=theme,pegfill='magenta'),
@@ -354,7 +355,7 @@ def item_report(df,i,glyphcol,pcol,xcol,tcol,gcol,wcol,rcol,tonecol,lowtonecol,b
     labels_tone = allvals_i.label_tone
 
     bases = hconcat(*[coloricon_single(hexes_base[j],330,'base',labels_base[j]) for j in range(len(hexes_base))],spacer=17,theme=theme)
-    tones = hconcat(*[coloricon_single(hexes_tone[j],330,'tone',labels_tone[j]) for j in range(len(hexes_tone))],spacer=17,theme=theme)
+    tones = hconcat(*[coloricon_single(hexes_tone[j],330,'image',labels_tone[j]) for j in range(len(hexes_tone))],spacer=17,theme=theme)
     colorvis = vconcat(bases,tones,spacer=17,theme=theme)
 
     tombstone_text = tombstone(tombstone_dict)
@@ -389,7 +390,7 @@ def bottom_left_text(im,s,fonts=fonts,fontsize=45,fill='white'):
 def vconcat(*args,spacer=64,theme='light'):
     
     if theme=='light':
-        bg = "white"
+        bg = "gainsboro"
     elif theme=='dark':
         bg = "#212121"
 
@@ -405,7 +406,7 @@ def vconcat(*args,spacer=64,theme='light'):
 def hconcat(*args,spacer=64,theme='light'):
         
         if theme=='light':
-            bg = "white"
+            bg = "gainsboro"
         elif theme=='dark':
             bg = "#212121"
     
@@ -451,47 +452,53 @@ def mat(im,theme='light'):
 
     return matted
 
-def wfit(im,fitwidth,theme='light',position='center'):
+def hfit(im,fitwidth,theme='light',position='center'):
 
     if theme=='light':
         bg = "white"
     elif theme=='dark':
         bg = "#212121"
 
-    if fitwidth < im.width:
-        im.thumbnail((fitwidth,fitwidth),Image.Resampling.LANCZOS)
+    im_copy = deepcopy(im)
+
+    if fitwidth < im_copy.width:
+        # resize to fit width but keep aspect ratio
+        im_copy.thumbnail((fitwidth,fitwidth/im_copy.width*im_copy.height),Image.Resampling.LANCZOS)
 
     if position == 'center':
-        width_offset = int((fitwidth - im.width) / 2)
+        width_offset = int((fitwidth - im_copy.width) / 2)
     elif position == 'left':
         width_offset = 0
     elif position == 'right':
-        width_offset = fitwidth - im.width
+        width_offset = fitwidth - im_copy.width
     
-    matted = Image.new('RGB',(fitwidth, im.height),bg)
-    matted.paste(im,(width_offset,0))
+    matted = Image.new('RGB',(fitwidth, im_copy.height),bg)
+    matted.paste(im_copy,(width_offset,0))
 
     return matted
 
-def hfit(im,fitheight,theme='light',position='center'):
+def vfit(im,fitheight,theme='light',position='center'):
         
         if theme=='light':
             bg = "white"
         elif theme=='dark':
             bg = "#212121"
+
+        im_copy = deepcopy(im)
     
-        if fitheight < im.height:
-            im.thumbnail((fitheight,fitheight),Image.Resampling.LANCZOS)
+        if fitheight < im_copy.height:
+            # resize to fit height but keep aspect ratio
+            im_copy.thumbnail((fitheight/im_copy.height*im_copy.width,fitheight),Image.Resampling.LANCZOS)
     
         if position == 'center':
-            height_offset = int((fitheight - im.height) / 2)
+            height_offset = int((fitheight - im_copy.height) / 2)
         elif position == 'top':
             height_offset = 0
         elif position == 'bottom':
-            height_offset = fitheight - im.height
+            height_offset = fitheight - im_copy.height
         
-        matted = Image.new('RGB',(im.width,fitheight),bg)
-        matted.paste(im,(0,height_offset))
+        matted = Image.new('RGB',(im_copy.width,fitheight),bg)
+        matted.paste(im_copy,(0,height_offset))
     
         return matted
 
@@ -597,7 +604,7 @@ def coloricon_single(c,s,loc,label=None,fonts=fonts,theme='light'):
 
         if loc=='base':
             fill = "black"
-        elif loc=='tone':
+        elif loc=='image':
             fill = "white"
 
         Lab = label.split(',')
