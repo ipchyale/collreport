@@ -1,8 +1,28 @@
 from PIL import Image,ImageDraw,ImageFont
 import os
-import textwrap
+#import textwrap
 import numpy as np
 from copy import deepcopy
+
+class CollectionItem:
+    def __init__(self):
+        self.acc = '' 
+        self.artist = ''
+        self.nationality = ''
+        self.active = ''
+        self.title = ''
+        self.date = ''
+        self.medium = ''
+        self.dims = ''
+        self.credit = ''
+        self.printpath = '' 
+        self.imagelight = [] # list of floats
+        self.basesat = [] # list of floats
+        self.mappath = ''
+        self.fluorescence = [] # list of floats (AUC)
+        self.goosepath = ''
+        self.color = [] # list of dicts with color data
+        self.texture = [] # list of dicts with texture data
 
 FONTDIR = os.path.expanduser("~") + "/fonts/"
 
@@ -111,40 +131,6 @@ def slider(title,collvals,colltrials,lmlvals=None,
     
     return canvas
 
-def gmat(im,font=font,bg='white',top='WARM',right='MATTE',bottom='ROUGH',left='THICK'):
-    
-    fill = "dimgrey"
-    
-    if im.size != (960,960):
-        
-        if any([im.width < 960, im.height < 960]):
-            raise ValueError("Glyph must be at least 960x960 pixels")
-        
-        im.thumbnail((960,960),Image.Resampling.LANCZOS)
-    
-    gmat = Image.new('RGB',(1280,1280),bg)
-    
-    try:
-        gmat.paste(im,(160,160),im)
-    except:
-        gmat.paste(im,(160,160))
-    
-    draw = ImageDraw.Draw(gmat)
-    
-    fontWidth,_ = font.getsize(top)
-    draw.text((int(640-fontWidth/2),150),text=top,font=font,fill=fill)
-    
-    _,fontHeight = font.getsize(right)
-    draw.text((1080,int(640-fontHeight/2)),text=right,font=font,fill=fill)
-    
-    fontWidth,_ = font.getsize(bottom)
-    draw.text((int(640-fontWidth/2),1080),text=bottom,font=font,fill=fill)
-    
-    fontWidth,fontHeight = font.getsize(left)
-    draw.text((int(200-fontWidth),int(640-fontHeight/2)),text=left,font=font,fill=fill)
-    
-    return gmat
-
 def info_panel(idx,title='',font=font,font_large=font_large,bg='white'):
     
     fill = "dimgrey"
@@ -162,16 +148,6 @@ def info_panel(idx,title='',font=font,font_large=font_large,bg='white'):
     draw.text((fontWidthIdx+spacer,fontHeightIdx-fontHeightTitle),text=title,font=font,fill=fill)
     
     return canvas
-
-def get_text_size(font, text):
-    if text:
-        return font.getsize(text)
-    else:
-        return (0, 0)
-
-def draw_text(draw, pos, text, font, fill):
-    if text:
-        draw.text(pos, text=text, font=font, fill=fill)
 
 def tombstone(tombstone_dict, fonts=fonts, bg='white'):
     
@@ -294,6 +270,46 @@ def uv_panel(collection_item,collvals,lmlvals,bg):
     panel = vconcat(goosebump_plot,uv_slider,spacer=64,bg=bg)
 
     return panel
+
+def coloricon_single(c,s,loc,label=None,fonts=fonts,bg='white'):
+
+    font_size_loc = int(s/12)
+    font_loc = ImageFont.truetype(fonts['regular'],font_size_loc)
+
+    font_size_label = int(s/8)
+    font_label = ImageFont.truetype(fonts['regular'],font_size_label)
+
+    im = Image.new('RGB',(s,s),bg)
+    draw = ImageDraw.Draw(im)
+    draw.rounded_rectangle(
+        [(s/32, s/32), (s - s/32, s - s/32)],radius=int(s*0.15625),fill=c,outline='black',width=1
+    )
+
+    if label is not None:
+
+        if loc=='base':
+            fill = "black"
+        elif loc=='image':
+            fill = "white"
+
+        Lab = label.split(',')
+        L = 'L: ' + Lab[0]
+        a = 'a*: ' + Lab[1]
+        b = 'b*: ' + Lab[2]
+        Lw,Lh = font_label.getsize(L)
+        aw,ah = font_label.getsize(a)
+        bw,bh = font_label.getsize(b)
+
+        topoffset = s / 5
+        spacer = s / 16
+        draw.text((s/2 - Lw/2, topoffset ), L, font=font_label, fill=fill)
+        draw.text((s/2 - aw/2, topoffset + spacer + Lh), a, font=font_label, fill=fill)
+        draw.text((s/2 - bw/2, topoffset + spacer + Lh + spacer + ah), b, font=font_label, fill=fill)
+
+        locw,loch = font_loc.getsize(loc.upper())
+        draw.text((s/2 - locw/2, s - loch - loch - loch), loc.upper(), font=font_loc, fill=fill)
+
+    return im
 
 def middle_panel(collection_item,infopanel_height,bg='white'):
 
@@ -474,6 +490,40 @@ def vfit(im,fitheight,bg='white',position='center'):
     
         return matted
 
+def gmat(im,font=font,bg='white',top='WARM',right='MATTE',bottom='ROUGH',left='THICK'):
+    
+    fill = "dimgrey"
+    
+    if im.size != (960,960):
+        
+        if any([im.width < 960, im.height < 960]):
+            raise ValueError("Glyph must be at least 960x960 pixels")
+        
+        im.thumbnail((960,960),Image.Resampling.LANCZOS)
+    
+    gmat = Image.new('RGB',(1280,1280),bg)
+    
+    try:
+        gmat.paste(im,(160,160),im)
+    except:
+        gmat.paste(im,(160,160))
+    
+    draw = ImageDraw.Draw(gmat)
+    
+    fontWidth,_ = font.getsize(top)
+    draw.text((int(640-fontWidth/2),150),text=top,font=font,fill=fill)
+    
+    _,fontHeight = font.getsize(right)
+    draw.text((1080,int(640-fontHeight/2)),text=right,font=font,fill=fill)
+    
+    fontWidth,_ = font.getsize(bottom)
+    draw.text((int(640-fontWidth/2),1080),text=bottom,font=font,fill=fill)
+    
+    fontWidth,fontHeight = font.getsize(left)
+    draw.text((int(200-fontWidth),int(640-fontHeight/2)),text=left,font=font,fill=fill)
+    
+    return gmat
+
 def glyph_legend(side=200,bg='white'):
 
     fill = "dimgrey"
@@ -548,45 +598,15 @@ def coloricon(base,tone,side,labels=False,fonts=fonts,bg='white'):
     
     return im
 
-def coloricon_single(c,s,loc,label=None,fonts=fonts,bg='white'):
+def get_text_size(font, text):
+    if text:
+        return font.getsize(text)
+    else:
+        return (0, 0)
 
-    font_size_loc = int(s/12)
-    font_loc = ImageFont.truetype(fonts['regular'],font_size_loc)
-
-    font_size_label = int(s/8)
-    font_label = ImageFont.truetype(fonts['regular'],font_size_label)
-
-    im = Image.new('RGB',(s,s),bg)
-    draw = ImageDraw.Draw(im)
-    draw.rounded_rectangle(
-        [(s/32, s/32), (s - s/32, s - s/32)],radius=int(s*0.15625),fill=c,outline='black',width=1
-    )
-
-    if label is not None:
-
-        if loc=='base':
-            fill = "black"
-        elif loc=='image':
-            fill = "white"
-
-        Lab = label.split(',')
-        L = 'L: ' + Lab[0]
-        a = 'a*: ' + Lab[1]
-        b = 'b*: ' + Lab[2]
-        Lw,Lh = font_label.getsize(L)
-        aw,ah = font_label.getsize(a)
-        bw,bh = font_label.getsize(b)
-
-        topoffset = s / 5
-        spacer = s / 16
-        draw.text((s/2 - Lw/2, topoffset ), L, font=font_label, fill=fill)
-        draw.text((s/2 - aw/2, topoffset + spacer + Lh), a, font=font_label, fill=fill)
-        draw.text((s/2 - bw/2, topoffset + spacer + Lh + spacer + ah), b, font=font_label, fill=fill)
-
-        locw,loch = font_loc.getsize(loc.upper())
-        draw.text((s/2 - locw/2, s - loch - loch - loch), loc.upper(), font=font_loc, fill=fill)
-
-    return im
+def draw_text(draw, pos, text, font, fill):
+    if text:
+        draw.text(pos, text=text, font=font, fill=fill)
 
 def textline(s,fonts=fonts,fonttype='regular',fontsize=90,bg='white'):
     
