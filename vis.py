@@ -6,7 +6,8 @@ from copy import deepcopy
 
 class CollectionItem:
     def __init__(self):
-        self.acc = '' 
+        self.acc = ''
+        self.printpath = ''  
         self.artist = ''
         self.nationality = ''
         self.active = ''
@@ -15,14 +16,16 @@ class CollectionItem:
         self.medium = ''
         self.dims = ''
         self.credit = ''
-        self.printpath = '' 
-        self.imagelight = [] # list of floats
-        self.basesat = [] # list of floats
-        self.mappath = ''
-        self.fluorescence = [] # list of floats (AUC)
-        self.goosepath = ''
+        self.glyphpath = ''
+        self.thickness = [] # list of floats
+        self.gloss = [] # list of floats
         self.color = [] # list of dicts with color data
         self.texture = [] # list of dicts with texture data
+        self.fluorescence = [] # list of floats (AUC)
+        self.goosepath = ''
+        self.imagelight = None
+        self.basesat = None
+        self.mappath = ''
 
 FONTDIR = os.path.expanduser("~") + "/fonts/"
 
@@ -56,7 +59,7 @@ def slider(title,collvals,colltrials,lmlvals=None,
            font=font,bg='white',rounding_digits=0,pegfill=None,collfill=None):
     
     fill = "dimgrey"
-    lmlfill = "lightgrey"
+    lmlfill = "dimgrey"
     
     if collfill is None:
         collfill = "#c99277" # a dusty orange color
@@ -264,9 +267,9 @@ def uv_panel(collection_item,collvals,lmlvals,bg):
                        rounding_digits=2,bg=bg)
     
     goosebump_plot = Image.open(collection_item.goosepath)
-    goosebump_plot = draw_outline(goosebump_plot,1,'black')
-    goosebump_plot = hfit(goosebump_plot,uv_slider.width,bg=bg)
-
+    goosebump_plot.thumbnail((768,768),Image.Resampling.LANCZOS)    
+    
+    uv_slider = hfit(uv_slider,goosebump_plot.width,bg=bg)
     panel = vconcat(goosebump_plot,uv_slider,spacer=64,bg=bg)
 
     return panel
@@ -290,6 +293,8 @@ def coloricon_single(c,s,loc,label=None,fonts=fonts,bg='white'):
         if loc=='base':
             fill = "black"
         elif loc=='image':
+            fill = "white"
+        elif loc=='mid':
             fill = "white"
 
         Lab = label.split(',')
@@ -361,6 +366,8 @@ def middle_panel(collection_item,infopanel_height,bg='white'):
 
             texture_images = hconcat(*texture_images,spacer=xspacer,bg=bg)
             texture_images = vconcat(median_texture_image,texture_images,spacer=64,bg=bg)
+        else:
+            texture_images = median_texture_image
 
     else:
         texture_images = Image.new('RGB',(1024,1024),color="dimgrey")
@@ -376,12 +383,15 @@ def right_panel(collection_item,collvals,lmlvals,bg='white'):
     glyph = Image.open(collection_item.glyphpath)
     matted_glyph = gmat(glyph,bg=bg)
 
+    # this will ignore anything other than dmax and dmin, which is what we want
     colltrials_bstar_base = [item['LAB_B'] for item in collection_item.color if item['mloc'] == 'base']
     colltrials_bstar_image = [item['LAB_B'] for item in collection_item.color if item['mloc'] == 'image']
 
+    roughness_trials = [item['roughness'] for item in collection_item.texture]
+
     sliders = vconcat(
         slider('THICKNESS (mm)',collvals['thickness'],collection_item.thickness,lmlvals['thickness'],bg=bg,rounding_digits=None),
-        slider('ROUGHNESS (σ)',collvals['roughness'],collection_item.roughness,lmlvals['roughness'],bg=bg,rounding_digits=2),
+        slider('ROUGHNESS (σ)',collvals['roughness'],roughness_trials,lmlvals['roughness'],bg=bg,rounding_digits=2),
         slider('GLOSS (GU)',collvals['gloss'],collection_item.gloss,lmlvals['gloss'],bg=bg),
         slider('BASE WARMTH (b*)',collvals['bstar_base'],colltrials_bstar_base,lmlvals['bstar_base'],bg=bg),
         slider('IMAGE WARMTH (b*)',collvals['bstar_image'],colltrials_bstar_image,lmlvals['bstar_image'],bg=bg),
