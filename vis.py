@@ -269,7 +269,7 @@ def uv_panel(collection_item,collvals,lmlvals,bg):
     goosebump_plot = Image.open(collection_item.goosepath)
     goosebump_plot.thumbnail((768,768),Image.Resampling.LANCZOS)    
     
-    uv_slider = hfit(uv_slider,goosebump_plot.width,bg=bg)
+    goosebump_plot = hfit(goosebump_plot,uv_slider.width,bg=bg)
     panel = vconcat(goosebump_plot,uv_slider,spacer=64,bg=bg)
 
     return panel
