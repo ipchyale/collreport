@@ -4,29 +4,6 @@ import os
 import numpy as np
 from copy import deepcopy
 
-class CollectionItem:
-    def __init__(self):
-        self.acc = ''
-        self.printpath = ''  
-        self.artist = ''
-        self.nationality = ''
-        self.active = ''
-        self.title = ''
-        self.date = ''
-        self.medium = ''
-        self.dims = ''
-        self.credit = ''
-        self.glyphpath = ''
-        self.thickness = [] # list of floats
-        self.gloss = [] # list of floats
-        self.color = [] # list of dicts with color data
-        self.texture = [] # list of dicts with texture data
-        self.fluorescence = [] # list of floats (AUC)
-        self.goosepath = ''
-        self.imagelight = None
-        self.basesat = None
-        self.mappath = ''
-
 FONTDIR = os.path.expanduser("~") + "/fonts/"
 
 fonts = {
