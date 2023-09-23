@@ -357,7 +357,7 @@ def middle_panel(collection_item,infopanel_height,bg='white'):
 
 def right_panel(collection_item,collvals,lmlvals,bg='white'):
     
-    glyph = Image.open(collection_item.glyphpath)
+    glyph = collection_item.glyph
     matted_glyph = gmat(glyph,bg=bg)
 
     # this will ignore anything other than dmax and dmin, which is what we want
@@ -430,12 +430,15 @@ def hconcat(*args,spacer=64,bg='white'):
         
         return canvas
 
-def mat(im,bg='white'):
+def mat(im,bg='white',return_margin=False):
     
     matted = Image.new('RGB',(im.width + int(im.width * 0.2), im.height + int(im.height * 0.2)),bg)
     matted.paste(im,(int(im.width * 0.1),int(im.height * 0.1)))
 
-    return matted
+    if return_margin:
+        return matted, int(im.width * 0.1)
+    else:
+        return matted
 
 def hfit(im,fitwidth,bg='white',position='center'):
 
