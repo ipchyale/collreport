@@ -3,6 +3,7 @@ import os
 #import textwrap
 import numpy as np
 from copy import deepcopy
+from .utils import *
 
 FONTDIR = os.path.expanduser("~") + "/fonts/"
 
@@ -25,6 +26,23 @@ fonts = {
 font = ImageFont.truetype(fonts['regular'],45)
 font_large = ImageFont.truetype(fonts['regular'],90)
 font_serif = ImageFont.truetype(fonts['serif'],36)
+
+def item_report(collection_item,lmlvals,collvals,special_panel=None,bg='white'):
+
+    if special_panel is not None:
+        if special_panel == 'uv':
+            special_panel = uv_panel(collection_item,collvals,lmlvals,bg)
+        elif special_panel == 'condition':
+            special_panel = condition_panel(collection_item,collvals,bg)
+    
+    left, infopanel_height = left_panel(collection_item,special_panel,bg)
+    middle = middle_panel(collection_item,infopanel_height,bg)
+    right = right_panel(collection_item,collvals,lmlvals,bg=bg)
+
+    report = hconcat(left,middle,right,spacer=192,bg=bg)
+    matted_report = mat(report,bg=bg)
+
+    return matted_report
 
 def slider_pos(val,valmin,valrange,slider_width):
     pct = (val - valmin) / valrange
@@ -379,258 +397,3 @@ def right_panel(collection_item,collvals,lmlvals,bg='white'):
     panel = vconcat(matted_glyph,sliders,spacer=0,bg=bg)
 
     return panel
-
-def item_report(collection_item,lmlvals,collvals,special_panel=None,bg='white'):
-
-    if special_panel is not None:
-        if special_panel == 'uv':
-            special_panel = uv_panel(collection_item,collvals,lmlvals,bg)
-        elif special_panel == 'condition':
-            special_panel = condition_panel(collection_item,collvals,bg)
-    
-    left, infopanel_height = left_panel(collection_item,special_panel,bg)
-    middle = middle_panel(collection_item,infopanel_height,bg)
-    right = right_panel(collection_item,collvals,lmlvals,bg=bg)
-
-    report = hconcat(left,middle,right,spacer=192,bg=bg)
-    matted_report = mat(report,bg=bg)
-
-    return matted_report
-
-def bottom_left_text(im,s,fonts=fonts,fontsize=45,fill='white'):
-
-    draw = ImageDraw.Draw(im)
-    font = ImageFont.truetype(fonts['regular'],fontsize)
-    w,h = font.getsize(s)
-
-    offset = 32
-    draw.text((offset,im.height-h-offset),s,fill=fill,font=font)
-
-    return im
-
-def vconcat(*args,spacer=64,bg='white'):
-    
-    canvas_width = max([i.width for i in args])
-    canvas_height = sum([i.height for i in args]) + spacer*(len(args)-1)
-    canvas = Image.new('RGB',(canvas_width,canvas_height),bg)
-
-    for i,arg in enumerate(args):
-        canvas.paste(arg,(0,spacer*i+sum([j.height for j in args[:i]])))
-    
-    return canvas
-
-def hconcat(*args,spacer=64,bg='white'):
-        
-        canvas_width = sum([i.width for i in args]) + spacer*(len(args)-1)
-        canvas_height = max([i.height for i in args])
-        canvas = Image.new('RGB',(canvas_width,canvas_height),bg)
-    
-        for i,arg in enumerate(args):
-            canvas.paste(arg,(spacer*i+sum([j.width for j in args[:i]]),0))
-        
-        return canvas
-
-def mat(im,bg='white',return_margin=False):
-    
-    matted = Image.new('RGB',(im.width + int(im.width * 0.2), im.height + int(im.height * 0.2)),bg)
-    matted.paste(im,(int(im.width * 0.1),int(im.height * 0.1)))
-
-    if return_margin:
-        return matted, int(im.width * 0.1)
-    else:
-        return matted
-
-def hfit(im,fitwidth,bg='white',position='center'):
-
-    im_copy = deepcopy(im)
-
-    if fitwidth < im_copy.width:
-        # resize to fit width but keep aspect ratio
-        im_copy.thumbnail((fitwidth,fitwidth/im_copy.width*im_copy.height),Image.Resampling.LANCZOS)
-
-    if position == 'center':
-        width_offset = int((fitwidth - im_copy.width) / 2)
-    elif position == 'left':
-        width_offset = 0
-    elif position == 'right':
-        width_offset = fitwidth - im_copy.width
-    
-    matted = Image.new('RGB',(fitwidth, im_copy.height),bg)
-    matted.paste(im_copy,(width_offset,0))
-
-    return matted
-
-def vfit(im,fitheight,bg='white',position='center'):
-
-        im_copy = deepcopy(im)
-    
-        if fitheight < im_copy.height:
-            # resize to fit height but keep aspect ratio
-            im_copy.thumbnail((fitheight/im_copy.height*im_copy.width,fitheight),Image.Resampling.LANCZOS)
-    
-        if position == 'center':
-            height_offset = int((fitheight - im_copy.height) / 2)
-        elif position == 'top':
-            height_offset = 0
-        elif position == 'bottom':
-            height_offset = fitheight - im_copy.height
-        
-        matted = Image.new('RGB',(im_copy.width,fitheight),bg)
-        matted.paste(im_copy,(0,height_offset))
-    
-        return matted
-
-def gmat(im,font=font,bg='white',top='WARM',right='MATTE',bottom='ROUGH',left='THICK'):
-    
-    fill = "dimgrey"
-    
-    if im.size != (960,960):
-        
-        if any([im.width < 960, im.height < 960]):
-            raise ValueError("Glyph must be at least 960x960 pixels")
-        
-        im.thumbnail((960,960),Image.Resampling.LANCZOS)
-    
-    gmat = Image.new('RGB',(1280,1280),bg)
-    
-    try:
-        gmat.paste(im,(160,160),im)
-    except:
-        gmat.paste(im,(160,160))
-    
-    draw = ImageDraw.Draw(gmat)
-    
-    fontWidth,_ = font.getsize(top)
-    draw.text((int(640-fontWidth/2),150),text=top,font=font,fill=fill)
-    
-    _,fontHeight = font.getsize(right)
-    draw.text((1080,int(640-fontHeight/2)),text=right,font=font,fill=fill)
-    
-    fontWidth,_ = font.getsize(bottom)
-    draw.text((int(640-fontWidth/2),1080),text=bottom,font=font,fill=fill)
-    
-    fontWidth,fontHeight = font.getsize(left)
-    draw.text((int(200-fontWidth),int(640-fontHeight/2)),text=left,font=font,fill=fill)
-    
-    return gmat
-
-def glyph_legend(side=200,bg='white'):
-
-    fill = "dimgrey"
-    
-    im = Image.new('RGB', (side,side), bg)
-    draw = ImageDraw.Draw(im)
-    halfside = int( side / 2 )
-
-    draw.line([(halfside,0),(halfside,side)],
-              fill=fill,
-              width=round(side/200))
-    draw.line([(0,halfside),(side,halfside)],
-              fill=fill,
-              width=round(side/200))
-
-    sSixth = side / 6;
-    sThird = side / 3;
-    sHalf = side / 2;
-    sTwoThird = side * 2/3;
-    sFiveSixth = side * 5/6;
-
-    draw.line([(sHalf,0),(side,sHalf)],fill=fill,width=round(side/200))
-    draw.line([(side,sHalf),(sHalf,side)],fill=fill,width=round(side/200))
-    draw.line([(sHalf,side),(0,sHalf)],fill=fill,width=round(side/200))
-    draw.line([(0,sHalf),(sHalf,0)],fill=fill,width=round(side/200))
-
-    draw.line([(sHalf,sSixth),(sFiveSixth,sHalf)],fill=fill,width=round(side/200))
-    draw.line([(sFiveSixth,sHalf),(sHalf,sFiveSixth)],fill=fill,width=round(side/200))
-    draw.line([(sHalf,sFiveSixth),(sSixth,sHalf)],fill=fill,width=round(side/200))
-    draw.line([(sSixth,sHalf),(sHalf,sSixth)],fill=fill,width=round(side/200))
-
-    draw.line([(sHalf,sThird),(sTwoThird,sHalf)],fill=fill,width=round(side/200))
-    draw.line([(sTwoThird,sHalf),(sHalf,sTwoThird)],fill=fill,width=round(side/200))
-    draw.line([(sHalf,sTwoThird),(sThird,sHalf)],fill=fill,width=round(side/200))
-    draw.line([(sThird,sHalf),(sHalf,sThird)],fill=fill,width=round(side/200))
-
-    return gmat(mat(im))
-
-def coloricon(base,tone,side,labels=False,fonts=fonts,bg='white'):
-
-    font_size = int(side/16)
-    font = ImageFont.truetype(fonts['regular'],font_size)
-    font_thin = ImageFont.truetype(fonts['thin'],font_size)
-
-    if bg is None:
-        im = Image.new('RGBA',(side,side),bg)
-    else:
-        im = Image.new('RGB',(side,side),bg)
-    
-    draw = ImageDraw.Draw(im)
-    
-    draw.rounded_rectangle(
-        [(side/16,side/16),(side - side/16, side - side/16)],radius=int(side*0.15625),fill=base
-    )
-   
-    draw.rounded_rectangle(
-        [(side/2 - side/4, side/2 - side/4), (side/2 + side/4, side/2 + side/4)],radius=int(side*0.15625),fill=tone
-    )
-
-    if labels:
-        top = "SPECTROPHOTOMETER"
-        top_width = font_thin.getsize(top)[0]
-        draw.text((side/2 - top_width/2, font_size), top, font=font_thin, fill="black")
-
-        DMIN = "BASE"
-        DMIN_width,DMIN_height = font.getsize(DMIN)
-        draw.text((side/2 - DMIN_width/2, side - DMIN_height - font_size), DMIN, font=font, fill="black")
-
-        DMAX = "TONE"
-        DMAX_width,DMAX_height = font.getsize(DMAX)
-        draw.text((side/2 - DMAX_width/2, side/2 - DMAX_height/2), DMAX, font=font, fill="white")
-    
-    return im
-
-def get_text_size(font, text):
-    if text:
-        return font.getsize(text)
-    else:
-        return (0, 0)
-
-def draw_text(draw, pos, text, font, fill):
-    if text:
-        draw.text(pos, text=text, font=font, fill=fill)
-
-def textline(s,fonts=fonts,fonttype='regular',fontsize=90,bg='white'):
-    
-    fill = "dimgrey"
-    
-    font = ImageFont.truetype(fonts[fonttype],fontsize)
-    w,h = font.getsize(s)
-    
-    canvas = Image.new('RGB',(w,h),bg)
-    draw = ImageDraw.Draw(canvas)
-    
-    draw.text((0,0),text=s,font=font,fill=fill)
-    
-    return canvas
-
-def draw_outline(im,width,linecolor):
-        
-        draw = ImageDraw.Draw(im)
-        draw.rectangle([(0,0),(im.width-1,im.height-1)],outline=linecolor,width=width)
-        
-        return im
-
-# def block_text(s,fonts=fonts,fontsize=36,width=70,bg='white'):
-
-#     swrapped = textwrap.fill(s,width=width)
-    
-#     fill = "dimgrey"
-
-#     font = ImageFont.truetype(fonts['serif'],fontsize)
-        
-#     blockWidth,blockHeight = font.getsize_multiline(swrapped)
-#     vincr = int(blockHeight * 0.1)
-#     canvas = Image.new('RGB',(blockWidth,blockHeight + vincr),bg)
-#     draw = ImageDraw.Draw(canvas)
-#     draw.multiline_text((0,0), swrapped, font=font, fill=fill)
-    
-#     return canvas
