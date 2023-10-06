@@ -4,6 +4,7 @@ import os
 import numpy as np
 from copy import deepcopy
 from .utils import *
+from math import ceil
 
 FONTDIR = os.path.expanduser("~") + "/fonts/"
 
@@ -34,12 +35,18 @@ def item_report(collection_item,lmlvals,collvals,special_panel=None,bg='white'):
             special_panel = uv_panel(collection_item,collvals,lmlvals,bg)
         elif special_panel == 'condition':
             special_panel = condition_panel(collection_item,collvals,bg)
+        elif special_panel == 'dims':
+            special_panel = collection_item.dimvis
+            special_panel.thumbnail((1600,1600),Image.Resampling.LANCZOS)
+            #special_panel = draw_outline(special_panel,1,'black')
     
     left, infopanel_height = left_panel(collection_item,special_panel,bg)
     middle = middle_panel(collection_item,infopanel_height,bg)
     right = right_panel(collection_item,collvals,lmlvals,bg=bg)
 
-    report = hconcat(left,middle,right,spacer=192,bg=bg)
+    middleright = vconcat(middle,right,spacer=96,bg=bg)
+
+    report = hconcat(left,middleright,spacer=192,bg=bg)
     matted_report = mat(report,bg=bg)
 
     return matted_report
@@ -54,15 +61,15 @@ def slider(title,collvals,colltrials,lmlvals=None,
            font=font,bg='white',rounding_digits=0,pegfill=None,collfill=None):
     
     fill = "dimgrey"
-    lmlfill = "dimgrey"
+    lmlfill = "grey"
     
     if collfill is None:
-        collfill = "#c99277" # a dusty orange color
-
+        #collfill = "#c99277" # a dusty orange color
+        collfill = "#66d9cf" # a turquoise color
     if pegfill is None:
         pegfill = bg
     
-    canvas = Image.new('RGB',(1000,200),bg)
+    canvas = Image.new('RGB',(1280,200),bg)
     slider_width,slider_height = canvas.size
     draw = ImageDraw.Draw(canvas)
     
@@ -81,12 +88,12 @@ def slider(title,collvals,colltrials,lmlvals=None,
     if lmlvals is not None:
         for lmlval in lmlvals:
             pos = slider_pos(lmlval,valmin,valrange,slider_width)
-            draw.line([(pos,int(slider_height*0.5-tick_height/2)),(pos,int(slider_height*0.5+tick_height/2))],width=int(slider_width/1000),fill=lmlfill)
+            draw.line([(pos,int(slider_height*0.5-tick_height/2)),(pos,int(slider_height*0.5+tick_height/2))],width=1,fill=lmlfill)
 
     # collvals is a list of all values in the print collection
     for collval in collvals:
         pos = slider_pos(collval,valmin,valrange,slider_width)
-        draw.line([(pos,int(slider_height*0.5-tick_height/2)),(pos,int(slider_height*0.5+tick_height/2))],width=int(slider_width/1000),fill=collfill)
+        draw.line([(pos,int(slider_height*0.5-tick_height/2)),(pos,int(slider_height*0.5+tick_height/2))],width=2,fill=collfill)
     
     # median peg should sit atop the distribution ticks
     try:
@@ -131,7 +138,7 @@ def slider(title,collvals,colltrials,lmlvals=None,
 
 def info_panel(idx,title='',font=font,font_large=font_large,bg='white'):
     
-    fill = "dimgrey"
+    fill = (32,30,27)
     
     fontWidthIdx,fontHeightIdx = font_large.getsize(idx)
     fontWidthTitle,fontHeightTitle = font.getsize(title)
@@ -149,14 +156,14 @@ def info_panel(idx,title='',font=font,font_large=font_large,bg='white'):
 
 def tombstone(tombstone_dict, fonts=fonts, bg='white'):
     
-    fill = "dimgrey"
+    fill = (32,30,27)
 
     line_spacer = 16
     section_spacer = 32
 
-    font = ImageFont.truetype(fonts['regular'],30)
-    font_artist = ImageFont.truetype(fonts['bold'],45)
-    font_title = ImageFont.truetype(fonts['regular-i'],30)
+    font = ImageFont.truetype(fonts['regular'],45)
+    font_artist = ImageFont.truetype(fonts['bold'],60)
+    font_title = ImageFont.truetype(fonts['regular-i'],45)
 
     data = {
         'artist': {'font': font_artist, 'text': tombstone_dict.get('artist')},
@@ -203,16 +210,18 @@ def tombstone(tombstone_dict, fonts=fonts, bg='white'):
 
 def left_panel(collection_item,special_panel,bg='white'):
 
-    infopanel = info_panel(collection_item.acc,bg=bg)
+    infopanel = info_panel(collection_item.coll + " " + collection_item.acc,bg=bg)
     #infopanel.thumbnail((48/infopanel.height*infopanel.width,48),Image.Resampling.LANCZOS)
+
+    print_image_side = 1600
 
     try:
         print_image = Image.open(collection_item.printpath)
     except:
-        print_image = Image.new('RGB',(1024,1024),"dimgrey")
+        print_image = Image.new('RGB',(print_image_side,print_image_side),"dimgrey")
 
     print_image = draw_outline(print_image,1,'black')
-    print_image.thumbnail((1024,1024),Image.Resampling.LANCZOS)
+    print_image.thumbnail((print_image_side,print_image_side),Image.Resampling.LANCZOS)
 
     tombstone_dict = {
         'artist': collection_item.artist,
@@ -261,7 +270,7 @@ def uv_panel(collection_item,collvals,lmlvals,bg):
                        lmlvals['fluorescence'],
                        rounding_digits=2,bg=bg)
     
-    goosebump_plot = Image.open(collection_item.goosepath)
+    goosebump_plot = collection_item.goose
     goosebump_plot.thumbnail((768,768),Image.Resampling.LANCZOS)    
     
     goosebump_plot = hfit(goosebump_plot,uv_slider.width,bg=bg)
@@ -285,9 +294,9 @@ def coloricon_single(c,s,loc,label=None,fonts=fonts,bg='white'):
 
     if label is not None:
 
-        if loc=='base':
+        if loc in ['base', 'dmin']:
             fill = "black"
-        elif loc=='image':
+        elif loc in ['image', 'dmax']:
             fill = "white"
         elif loc=='mid':
             fill = "white"
@@ -326,7 +335,8 @@ def middle_panel(collection_item,infopanel_height,bg='white'):
         locrow = hconcat(*coloricons,spacer=17,bg=bg)
         locrows.append(locrow)
 
-    colorvis = vconcat(*locrows,spacer=17,bg=bg)
+    #colorvis = vconcat(*locrows,spacer=17,bg=bg)
+    colorvis = hconcat(*locrows,spacer=17,bg=bg)
 
     """
     To find the median texture image, we need to look at the roughness values 
@@ -344,14 +354,14 @@ def middle_panel(collection_item,infopanel_height,bg='white'):
         median_texture_trial = [item for item in texture_trials if item['roughness'] == median_roughness][0]
         median_texture_tifpath = median_texture_trial['tifpath']
         median_texture_image = Image.open(median_texture_tifpath)
-        median_texture_image.thumbnail((1024,1024),Image.Resampling.LANCZOS)
+        median_texture_image.thumbnail((1280,1280),Image.Resampling.LANCZOS)
         median_texture_image = bottom_left_text(median_texture_image,"σ = "+str(round(median_roughness,3)))
 
         texture_trials = [item for item in texture_trials if item['tifpath'] != median_texture_tifpath]
 
         if len(texture_trials) > 0:
             xspacer = 32
-            thumbw = int((1024 - xspacer) / 2)
+            thumbw = int((1280 - xspacer) / 2)
 
             texture_trials.sort(key=lambda x: x['roughness'])
             texture_images = [Image.open(item['tifpath']) for item in texture_trials]
@@ -365,7 +375,7 @@ def middle_panel(collection_item,infopanel_height,bg='white'):
             texture_images = median_texture_image
 
     else:
-        texture_images = Image.new('RGB',(1024,1024),color="dimgrey")
+        texture_images = Image.new('RGB',(1280,1280),color="dimgrey")
 
     colorvis_texture = vconcat(colorvis,texture_images,spacer=64,bg=bg)
     top_spacer = Image.new('RGB',(texture_images.width,infopanel_height),bg)
@@ -376,11 +386,11 @@ def middle_panel(collection_item,infopanel_height,bg='white'):
 def right_panel(collection_item,collvals,lmlvals,bg='white'):
     
     glyph = collection_item.glyph
-    matted_glyph = gmat(glyph,bg=bg)
+    matted_glyph = gmat(glyph,bg=bg,rgba=True)
 
     # this will ignore anything other than dmax and dmin, which is what we want
-    colltrials_bstar_base = [item['LAB_B'] for item in collection_item.color if item['mloc'] == 'base']
-    colltrials_bstar_image = [item['LAB_B'] for item in collection_item.color if item['mloc'] == 'image']
+    colltrials_bstar_base = [item['LAB_B'] for item in collection_item.color if item['mloc'] in ['base', 'dmin']]
+    colltrials_bstar_image = [item['LAB_B'] for item in collection_item.color if item['mloc'] in ['image', 'dmax']]
 
     roughness_trials = [item['roughness'] for item in collection_item.texture]
 

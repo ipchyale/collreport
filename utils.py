@@ -1,30 +1,71 @@
+from PIL import Image,ImageDraw,ImageFont
+import os
+#import textwrap
+import numpy as np
+from copy import deepcopy
 
-def vconcat(*args,spacer=64,bg='white'):
-    
+FONTDIR = os.path.expanduser("~") + "/fonts/"
+
+fonts = {
+    "thin":FONTDIR+"Roboto-Thin.ttf",
+    "light":FONTDIR+"Roboto-Light.ttf",
+    "regular":FONTDIR+"Roboto-Regular.ttf",
+    "medium":FONTDIR+"Roboto-Medium.ttf",
+    "bold":FONTDIR+"Roboto-Bold.ttf",
+    "black":FONTDIR+"Roboto-Black.ttf",
+    "thin-i":FONTDIR+"Roboto-ThinItalic.ttf",
+    "light-i":FONTDIR+"Roboto-LightItalic.ttf",
+    "regular-i":FONTDIR+"Roboto-Italic.ttf",
+    "medium-i":FONTDIR+"Roboto-MediumItalic.ttf",
+    "bold-i":FONTDIR+"Roboto-BoldItalic.ttf",
+    "black-i":FONTDIR+"Roboto-BlackItalic.ttf",
+    "serif":FONTDIR+"RobotoSerif-Thin.ttf"
+}
+
+font = ImageFont.truetype(fonts['regular'],45)
+font_large = ImageFont.truetype(fonts['regular'],90)
+font_serif = ImageFont.truetype(fonts['serif'],36)
+
+def vconcat(*args,spacer=64,bg='white',rgba=False):
+        
     canvas_width = max([i.width for i in args])
     canvas_height = sum([i.height for i in args]) + spacer*(len(args)-1)
-    canvas = Image.new('RGB',(canvas_width,canvas_height),bg)
+    
+    if rgba:
+        canvas = Image.new('RGBA',(canvas_width,canvas_height),bg)
+    else:
+        canvas = Image.new('RGB',(canvas_width,canvas_height),bg)
 
     for i,arg in enumerate(args):
-        canvas.paste(arg,(0,spacer*i+sum([j.height for j in args[:i]])))
+        if rgba:
+            canvas.paste(arg,(0,spacer*i+sum([j.height for j in args[:i]])),arg)
+        else:
+            canvas.paste(arg,(0,spacer*i+sum([j.height for j in args[:i]])))
     
     return canvas
 
-def hconcat(*args,spacer=64,bg='white'):
+def hconcat(*args,spacer=64,bg='white',rgba=False):
         
         canvas_width = sum([i.width for i in args]) + spacer*(len(args)-1)
         canvas_height = max([i.height for i in args])
-        canvas = Image.new('RGB',(canvas_width,canvas_height),bg)
+        
+        if rgba:
+            canvas = Image.new('RGBA',(canvas_width,canvas_height),bg)
+        else:
+            canvas = Image.new('RGB',(canvas_width,canvas_height),bg)
     
         for i,arg in enumerate(args):
-            canvas.paste(arg,(spacer*i+sum([j.width for j in args[:i]]),0))
+            if rgba:
+                canvas.paste(arg,(spacer*i+sum([j.width for j in args[:i]]),0),arg)
+            else:
+                canvas.paste(arg,(spacer*i+sum([j.width for j in args[:i]]),0))
         
         return canvas
 
 def mat(im,bg='white',return_margin=False):
     
-    matted = Image.new('RGB',(im.width + int(im.width * 0.2), im.height + int(im.height * 0.2)),bg)
-    matted.paste(im,(int(im.width * 0.1),int(im.height * 0.1)))
+    matted = Image.new('RGB',(im.width + int(im.width * 0.2), im.height + int(im.width * 0.2)),bg)
+    matted.paste(im,(int(im.width * 0.1),int(im.width * 0.1)))
 
     if return_margin:
         return matted, int(im.width * 0.1)
@@ -92,9 +133,7 @@ def bottom_left_text(im,s,fonts=fonts,fontsize=45,fill='white'):
 
     return im
 
-def textline(s,fonts=fonts,fonttype='regular',fontsize=90,bg='white'):
-    
-    fill = "dimgrey"
+def textline(s,fonts=fonts,fonttype='regular',fontsize=90,bg='white',fill = "dimgrey"):
     
     font = ImageFont.truetype(fonts[fonttype],fontsize)
     w,h = font.getsize(s)
@@ -113,7 +152,7 @@ def draw_outline(im,width,linecolor):
         
         return im
 
-def gmat(im,font=font,bg='white',top='WARM',right='MATTE',bottom='ROUGH',left='THICK'):
+def gmat(im,font=font,bg='white',top='WARM',right='MATTE',bottom='ROUGH',left='THICK',rgba=False):
     
     fill = "dimgrey"
     
@@ -124,11 +163,14 @@ def gmat(im,font=font,bg='white',top='WARM',right='MATTE',bottom='ROUGH',left='T
         
         im.thumbnail((960,960),Image.Resampling.LANCZOS)
     
-    gmat = Image.new('RGB',(1280,1280),bg)
+    if rgba:
+        gmat = Image.new('RGBA',(1280,1280),bg)
+    else:
+        gmat = Image.new('RGB',(1280,1280),bg)
     
-    try:
+    if rgba:
         gmat.paste(im,(160,160),im)
-    except:
+    else:
         gmat.paste(im,(160,160))
     
     draw = ImageDraw.Draw(gmat)
