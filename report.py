@@ -166,14 +166,14 @@ def tombstone(tombstone_dict, fonts=fonts, bg='white'):
     font_title = ImageFont.truetype(fonts['regular-i'],45)
 
     data = {
-        'artist': {'font': font_artist, 'text': tombstone_dict.get('artist')},
-        'nationality': {'font': font, 'text': tombstone_dict.get('nationality')},
-        'active': {'font': font, 'text': tombstone_dict.get('active')},
-        'title': {'font': font_title, 'text': tombstone_dict.get('title')},
-        'date': {'font': font, 'text': tombstone_dict.get('date')},
-        'medium': {'font': font, 'text': tombstone_dict.get('medium')},
-        'dims': {'font': font, 'text': tombstone_dict.get('dims')},
-        'credit': {'font': font, 'text': tombstone_dict.get('credit')}
+        'artist': {'font': font_artist, 'text': tombstone_dict.get('artist','')},
+        'nationality': {'font': font, 'text': tombstone_dict.get('nationality','')},
+        'active': {'font': font, 'text': tombstone_dict.get('active','')},
+        'title': {'font': font_title, 'text': tombstone_dict.get('title','')},
+        'date': {'font': font, 'text': tombstone_dict.get('date','')},
+        'medium': {'font': font, 'text': tombstone_dict.get('medium','')},
+        'dims': {'font': font, 'text': tombstone_dict.get('dims','')},
+        'credit': {'font': font, 'text': tombstone_dict.get('credit','')}
     }
 
     tombstoneWidth = 0
