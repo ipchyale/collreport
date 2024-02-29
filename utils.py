@@ -119,8 +119,10 @@ def get_text_size(font, text):
         return (0, 0)
 
 def draw_text(draw, pos, text, font, fill):
-    if text:
+    try:
         draw.text(pos, text=text, font=font, fill=fill)
+    except Exception as e:
+        print(f"Error drawing text: {e}")
 
 def bottom_left_text(im,s,fonts=fonts,fontsize=45,fill='white'):
 
