@@ -337,8 +337,8 @@ def middle_panel(collection_item,infopanel_height,bg='white'):
         locrow = hconcat(*coloricons,spacer=17,bg=bg)
         locrows.append(locrow)
 
-    #colorvis = vconcat(*locrows,spacer=17,bg=bg)
-    colorvis = hconcat(*locrows,spacer=17,bg=bg)
+    colorvis = vconcat(*locrows,spacer=17,bg=bg)
+    #colorvis = hconcat(*locrows,spacer=17,bg=bg)
 
     """
     To find the median texture image, we need to look at the roughness values 
