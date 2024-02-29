@@ -322,11 +322,13 @@ def coloricon_single(c,s,loc,label=None,fonts=fonts,bg='white'):
 
 def middle_panel(collection_item,infopanel_height,bg='white'):
 
-    mlocs = list(set([item['mloc'] for item in collection_item.color]))
+    m0_measurements = [item for item in collection_item.color if item['mmode']=='M0']
+
+    mlocs = list(set([item['mloc'] for item in m0_measurements]))
 
     locrows = []
     for mloc in mlocs:
-        mtrials = [item for item in collection_item.color if item['mloc'] == mloc]
+        mtrials = [item for item in m0_measurements if item['mloc'] == mloc]
         coloricons = []
         for mtrial in mtrials:
             label = str(round(mtrial['LAB_L'],2)) + "," + str(round(mtrial['LAB_A'],2)) + "," + str(round(mtrial['LAB_B'],2))
@@ -384,7 +386,7 @@ def middle_panel(collection_item,infopanel_height,bg='white'):
     return panel
 
 def right_panel(collection_item,collvals,lmlvals,bg='white'):
-    
+        
     glyph = collection_item.glyph
     matted_glyph = gmat(glyph,bg=bg,rgba=True)
 
