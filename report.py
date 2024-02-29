@@ -44,9 +44,9 @@ def item_report(collection_item,lmlvals,collvals,special_panel=None,bg='white'):
     middle = middle_panel(collection_item,infopanel_height,bg)
     right = right_panel(collection_item,collvals,lmlvals,bg=bg)
 
-    middleright = vconcat(middle,right,spacer=96,bg=bg)
+    #middleright = vconcat(middle,right,spacer=96,bg=bg)
 
-    report = hconcat(left,middleright,spacer=192,bg=bg)
+    report = hconcat(left,middle,right,spacer=192,bg=bg)
     matted_report = mat(report,bg=bg)
 
     return matted_report
