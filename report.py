@@ -298,7 +298,7 @@ def coloricon_single(c,s,loc,label=None,fonts=fonts,bg='white'):
             fill = "black"
         elif loc in ['image', 'dmax']:
             fill = "white"
-        elif loc=='mid':
+        elif any([loc=='mid', loc=='dmid']):
             fill = "white"
 
         Lab = label.split(',')
