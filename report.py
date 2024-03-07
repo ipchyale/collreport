@@ -264,11 +264,14 @@ def condition_panel(collection_item,collvals,bg):
 
 def uv_panel(collection_item,collvals,lmlvals,bg):
 
-    uv_slider = slider('FLUORESCENCE',
-                       collvals['fluorescence'],
-                       collection_item.fluorescence,
-                       lmlvals['fluorescence'],
-                       rounding_digits=2,bg=bg)
+    if collvals['fluorescence'] is not None:
+        uv_slider = slider('FLUORESCENCE',
+                        collvals['fluorescence'],
+                        collection_item.fluorescence,
+                        lmlvals['fluorescence'],
+                        rounding_digits=2,bg=bg)
+    else:
+        uv_slider = Image.new('RGB',(1280,200),bg)
     
     goosebump_plot = collection_item.goose
     goosebump_plot.thumbnail((768,768),Image.Resampling.LANCZOS)    
