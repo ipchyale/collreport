@@ -264,13 +264,13 @@ def condition_panel(collection_item,collvals,bg):
 
 def uv_panel(collection_item,collvals,lmlvals,bg):
 
-    if collvals['fluorescence'] is not None:
+    try:
         uv_slider = slider('FLUORESCENCE',
                         collvals['fluorescence'],
                         collection_item.fluorescence,
                         lmlvals['fluorescence'],
                         rounding_digits=2,bg=bg)
-    else:
+    except:
         uv_slider = Image.new('RGB',(1280,200),bg)
     
     goosebump_plot = collection_item.goose
